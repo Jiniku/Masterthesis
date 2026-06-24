@@ -49,3 +49,7 @@ htmlcov/
 *.out
 *.toc
 *.synctex.gz
+# Beamer build artifacts
+*.nav
+*.snm
+*.vrb
