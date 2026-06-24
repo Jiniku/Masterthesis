@@ -1,303 +1,272 @@
-"""CLI entry point — ``python -m quizgen.generate``.
+"""quizgen — assemble an exam from an existing question bank.
 
-Usage examples::
+You bring a JSON file of questions-with-metadata (the *pool*); quizgen selects
+a blueprint-compliant subset via Automated Test Assembly (greedy or MIP),
+optionally de-duplicating the pool first and validating the result. There is
+no LLM and no PDF ingestion — selection only.
 
-    # Generate 2 questions per chunk for chapters 1–3
-    python -m quizgen.generate --chapters 1-3 --per-chunk 2 --out quizzes_ch1-3.json
+Constraints come from a blueprint YAML and/or command-line flags; **flags
+override the YAML**, so you can keep a base ``blueprint.yaml`` and tweak a run
+from the command line.
 
-    # Single chapter, more questions
-    python -m quizgen.generate --chapters 3 --per-chunk 4 --out quiz_ch3.json
+Examples
+--------
+    # Pure command-line: pick 20 questions, 10/6/4 across chapters, 40/40/20
+    # difficulty, two disjoint versions, optimal (MIP) selection.
+    python -m quizgen --pool questions.json \
+        --total 20 --chapters 1:10,2:6,3:4 \
+        --difficulty 0.4,0.4,0.2 --versions 2 --selector mip
 
-    # Custom textbook path and config
-    python -m quizgen.generate --textbook data/other.pdf --config data/chapter_config.yaml
+    # Use a blueprint file, override just the version count and selector:
+    python -m quizgen --pool questions.json --blueprint blueprint.yaml \
+        --versions 3 --selector greedy
+
+    # Deduplicate the pool first, then write a validation report per version:
+    python -m quizgen --pool questions.json --blueprint blueprint.yaml \
+        --dedup --validate --out-dir out
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sys
 from pathlib import Path
 
-from quizgen.generate import (
-    generate_controlled,
-    generate_questions,
-    print_distribution_table,
-    print_questions,
-    print_summary,
-    questions_to_quiz,
-)
-from quizgen.ingest import ingest_textbook
+import yaml
+
+from quizgen.assemble import assemble, load_pool
+from quizgen.blueprint import Blueprint
+from quizgen.schema import QuestionType
+
+logger = logging.getLogger(__name__)
 
 
-def parse_difficulty_mix(spec: str | None) -> dict[str, float] | None:
-    """Parse 'easy:0.4,medium:0.4,hard:0.2' into a fraction mapping."""
-    if not spec:
-        return None
-    mix: dict[str, float] = {}
-    for part in spec.split(","):
-        key, _, val = part.partition(":")
-        mix[key.strip()] = float(val)
-    return mix
+# ── Argument parsers for the override flags ─────────────────────────
 
 
-def parse_chapters(spec: str) -> list[int]:
-    """Parse a chapter specification like '1-3' or '1,2,5' into a list of ints."""
-    chapters: list[int] = []
+def parse_chapter_counts(spec: str) -> dict[int, float | str | int]:
+    """Parse ``'1:10,2:6,3:4'`` or ``'1:50%,2:30%,3:20%'`` into a mapping.
+
+    Values keep their natural type so the blueprint can resolve them:
+    ``"50%"`` stays a percentage string, ``"0.5"`` a fraction, ``"10"`` an int.
+    """
+    out: dict[int, float | str | int] = {}
     for part in spec.split(","):
         part = part.strip()
-        if "-" in part:
-            start, end = part.split("-", 1)
-            chapters.extend(range(int(start), int(end) + 1))
+        if not part:
+            continue
+        key, _, val = part.partition(":")
+        val = val.strip()
+        chapter = int(key.strip())
+        if val.endswith("%"):
+            out[chapter] = val
+        elif "." in val:
+            out[chapter] = float(val)
         else:
-            chapters.append(int(part))
-    return sorted(set(chapters))
+            out[chapter] = int(val)
+    return out
+
+
+def parse_difficulty_mix(spec: str) -> dict[str, float]:
+    """Parse a difficulty mix.
+
+    Accepts positional fractions ``'0.4,0.4,0.2'`` (easy, medium, hard) or
+    named pairs ``'easy:0.4,medium:0.4,hard:0.2'``.
+    """
+    spec = spec.strip()
+    if ":" in spec:
+        mix: dict[str, float] = {}
+        for part in spec.split(","):
+            key, _, val = part.partition(":")
+            mix[key.strip()] = float(val)
+        return mix
+    fracs = [float(x) for x in spec.split(",") if x.strip()]
+    names = ["easy", "medium", "hard"]
+    if len(fracs) > len(names):
+        raise ValueError("difficulty mix takes at most 3 positional values")
+    return {names[i]: fracs[i] for i in range(len(fracs))}
+
+
+def parse_qtypes(spec: str) -> list[str]:
+    """Parse ``'mcq,short_answer'`` into a list of qtype strings (validated)."""
+    types: list[str] = []
+    valid = {t.value for t in QuestionType}
+    for part in spec.split(","):
+        t = part.strip()
+        if not t:
+            continue
+        if t not in valid:
+            raise ValueError(f"unknown qtype '{t}'; valid: {sorted(valid)}")
+        types.append(t)
+    return types
+
+
+# ── Blueprint construction (YAML defaults + flag overrides) ─────────
+
+
+def build_blueprint(args: argparse.Namespace) -> Blueprint:
+    """Build a :class:`Blueprint` from an optional YAML plus CLI overrides."""
+    data: dict = {}
+    if args.blueprint:
+        path = Path(args.blueprint)
+        if not path.exists():
+            raise FileNotFoundError(f"Blueprint not found: {path}")
+        data = yaml.safe_load(path.read_text()) or {}
+
+    # CLI flags override the YAML, field by field.
+    if args.title is not None:
+        data["title"] = args.title
+    if args.total is not None:
+        data["total_questions"] = args.total
+    if args.chapters is not None:
+        data["chapters"] = parse_chapter_counts(args.chapters)
+    if args.difficulty is not None:
+        data["difficulty_mix"] = parse_difficulty_mix(args.difficulty)
+    if args.qtypes is not None:
+        data["allowed_qtypes"] = parse_qtypes(args.qtypes)
+    if args.versions is not None:
+        data["versions"] = args.versions
+    if args.selector is not None:
+        data["selector"] = args.selector
+    if args.dedup_similarity is not None:
+        data["dedup_similarity"] = args.dedup_similarity
+
+    if "total_questions" not in data:
+        raise ValueError(
+            "total number of questions is required — pass --total N or set "
+            "'total_questions' in the blueprint YAML."
+        )
+    return Blueprint.model_validate(data)
+
+
+# ── CLI ─────────────────────────────────────────────────────────────
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="quizgen",
+        description="Assemble exam(s) from a question-bank JSON using a "
+        "blueprint and/or CLI flags (Automated Test Assembly).",
+    )
+    p.add_argument("--pool", required=True, help="Path to question-bank JSON (Quiz or bare list)")
+    p.add_argument("--blueprint", default=None, help="Blueprint YAML (defaults; flags override)")
+
+    g = p.add_argument_group("blueprint overrides (take precedence over the YAML)")
+    g.add_argument("--title", default=None, help="Exam title")
+    g.add_argument("--total", type=int, default=None, help="Total questions per version")
+    g.add_argument("--chapters", default=None,
+                   help="Per-chapter amounts, e.g. '1:10,2:6,3:4' or '1:50%%,2:30%%,3:20%%'")
+    g.add_argument("--difficulty", default=None,
+                   help="Difficulty mix, e.g. '0.4,0.4,0.2' or 'easy:0.4,medium:0.4,hard:0.2'")
+    g.add_argument("--qtypes", default=None, help="Allowed types, e.g. 'mcq,short_answer'")
+    g.add_argument("--versions", type=int, default=None, help="Number of parallel versions")
+    g.add_argument("--selector", choices=["greedy", "mip"], default=None, help="Selection method")
+    g.add_argument("--dedup-similarity", type=float, default=None,
+                   help="Near-duplicate threshold used during assembly")
+
+    p.add_argument("--dedup", action="store_true",
+                   help="Drop near-duplicate questions from the pool before assembly")
+    p.add_argument("--embeddings", action="store_true",
+                   help="Use embeddings for --dedup (default: token overlap)")
+    p.add_argument("--validate", action="store_true",
+                   help="Write a Markdown validation report per version")
+    p.add_argument("--out", default="exam.json", help="Output path for version A")
+    p.add_argument("--out-dir", default=None,
+                   help="Directory for all versions + reports (overrides --out)")
+    p.add_argument("-v", "--verbose", action="store_true")
+    return p
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        prog="quizgen.generate",
-        description="Generate exam/quiz questions from a textbook using an LLM.",
-    )
-    parser.add_argument(
-        "--textbook",
-        default="data/textbook.pdf",
-        help="Path to the textbook file (default: data/textbook.pdf)",
-    )
-    parser.add_argument(
-        "--chapters",
-        required=True,
-        help="Chapters to process, e.g. '1-3' or '1,2,5'",
-    )
-    parser.add_argument(
-        "--per-chunk",
-        type=int,
-        default=2,
-        help="Number of questions to generate per chunk (default: 2)",
-    )
-    parser.add_argument(
-        "--out",
-        default="quizzes.json",
-        help="Output JSON file path (default: quizzes.json)",
-    )
-    parser.add_argument(
-        "--config",
-        default=None,
-        help="Path to chapter_config.yaml (optional)",
-    )
-    parser.add_argument(
-        "--title",
-        default=None,
-        help="Title for the generated quiz",
-    )
-    parser.add_argument(
-        "--show",
-        type=int,
-        default=5,
-        help="Number of questions to preview (default: 5)",
-    )
-    parser.add_argument(
-        "--ingest-only",
-        action="store_true",
-        help="Only run ingestion (no LLM calls) — useful for testing chunking",
-    )
-    parser.add_argument(
-        "--rag",
-        action="store_true",
-        help="Use RAG mode (Phase 2): retrieve top-k chunks for grounding",
-    )
-    parser.add_argument(
-        "--no-rag",
-        action="store_true",
-        help="Disable RAG mode (Phase 1): generate from single chunks",
-    )
-    parser.add_argument(
-        "--rag-top-k",
-        type=int,
-        default=5,
-        help="Number of chunks to retrieve for RAG grounding (default: 5)",
-    )
-    parser.add_argument(
-        "--no-grounding-check",
-        action="store_true",
-        help="Disable grounding checks in RAG mode",
-    )
-    parser.add_argument(
-        "--index-dir",
-        default="data/chroma_db",
-        help="Directory for ChromaDB vector index (default: data/chroma_db)",
-    )
-    parser.add_argument(
-        "--controlled",
-        action="store_true",
-        help="Phase 3: controlled generation with explicit Bloom + difficulty spread",
-    )
-    parser.add_argument(
-        "--total",
-        type=int,
-        default=12,
-        help="Controlled mode: questions per chapter (default: 12)",
-    )
-    parser.add_argument(
-        "--difficulty-mix",
-        default=None,
-        help="Controlled mode difficulty spread, e.g. 'easy:0.4,medium:0.4,hard:0.2'",
-    )
-    parser.add_argument(
-        "--mock",
-        action="store_true",
-        help="Use the offline MockLLMClient (no API/Ollama needed) — for demos/tests",
-    )
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Enable verbose logging",
-    )
-
-    args = parser.parse_args()
-
-    # Configure logging
+    args = _build_parser().parse_args()
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(levelname)s  %(name)s  %(message)s",
     )
 
-    chapter_nums = parse_chapters(args.chapters)
-    print(f"\n📚 Processing chapters: {chapter_nums}")
-    print(f"   Textbook: {args.textbook}")
+    blueprint = build_blueprint(args)
+    pool = load_pool(args.pool)
 
-    # ── Step 1: Ingest ──────────────────────────────────────────────
-    print("\n⏳ Ingesting textbook...")
-    chapters = ingest_textbook(
-        args.textbook,
-        chapter_nums=chapter_nums,
-        config_path=args.config or "data/chapter_config.yaml",
-    )
+    print(f"\n📋 Blueprint: {blueprint.title}")
+    resolved = blueprint.resolve()
+    print(f"   Total/version: {resolved['total_questions']}")
+    print(f"   Per chapter:   {resolved['chapter_counts']}")
+    print(f"   Difficulty:    {resolved['difficulty_counts']}")
+    print(f"   Versions:      {resolved['versions']}   Selector: {blueprint.selector}")
+    print(f"   Pool size:     {len(pool)}")
 
-    total_chunks = sum(ch.total_chunks for ch in chapters)
-    print(f"   ✓ {len(chapters)} chapter(s), {total_chunks} chunk(s)")
+    # Optional pool deduplication before assembly.
+    if args.dedup:
+        from quizgen.dedup import deduplicate
 
-    for ch in chapters:
-        print(f"     Ch {ch.number}: {ch.title[:50]} — {len(ch.sections)} sections, {ch.total_chunks} chunks")
-
-    if args.ingest_only:
-        print("\n✅ Ingestion complete (--ingest-only). No LLM calls made.")
-        # Print some sample chunks for review
-        for ch in chapters:
-            if ch.chunks:
-                c = ch.chunks[0]
-                print(f"\n  Sample chunk from Ch {ch.number}:")
-                print(f"    ID: {c.chunk_id}")
-                print(f"    Tokens: {c.token_count}")
-                print(f"    Text: {c.text[:200]}...")
-        return
-
-    # ── Step 2: Determine generation mode ──────────────────────────
-    use_rag = args.rag and not args.no_rag  # --rag overrides, --no-rag disables
-
-    # Optional offline client for demos / CI.
-    client = None
-    if args.mock:
-        from quizgen.mock_client import MockLLMClient
-
-        client = MockLLMClient()
-        print("   Using offline MockLLMClient (no network calls)")
-
-    # ── Controlled mode (Phase 3) ──────────────────────────────────
-    if args.controlled:
-        difficulty_mix = parse_difficulty_mix(args.difficulty_mix)
-        index = None
-        if use_rag:
-            from quizgen.index import ChunkIndex
-
-            print(f"\n🔍 RAG MODE — Building vector index from {total_chunks} chunks...")
-            index = ChunkIndex(persist_dir=args.index_dir)
-            index.build(chapters, force_rebuild=False)
-
-        print(
-            f"\n⏳ Controlled generation — {args.total} questions/chapter "
-            f"across all Bloom levels (difficulty mix: {args.difficulty_mix or '40/40/20'})..."
+        res = deduplicate(
+            pool,
+            threshold=blueprint.dedup_similarity,
+            use_embeddings=args.embeddings,
         )
-        questions = generate_controlled(
-            chapters,
-            total_per_chapter=args.total,
-            client=client,
-            difficulty_mix=difficulty_mix,
-            index=index,
-        )
-        if not questions:
-            print("\n❌ No valid questions generated. Check your LLM endpoint in .env")
-            sys.exit(1)
+        print(f"   Dedup ({res.method}, t={res.threshold}): "
+              f"removed {res.n_removed}, {res.n_kept} remain")
+        pool = res.kept
 
-        title = args.title or f"Controlled Quiz — Chapters {args.chapters}"
-        blueprint = {
-            "chapters": chapter_nums,
-            "total_per_chapter": args.total,
-            "difficulty_mix": difficulty_mix or {"easy": 0.4, "medium": 0.4, "hard": 0.2},
-            "generation_mode": "controlled+RAG" if use_rag else "controlled",
-        }
-        quiz = questions_to_quiz(questions, title=title, blueprint=blueprint)
-        out_path = Path(args.out)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(quiz.model_dump_json(indent=2))
-        print(f"\n💾 Saved {len(questions)} questions to {out_path}")
+    result = assemble(pool, blueprint)
+    for w in result.diagnostics.get("capacity_warnings", []):
+        print(f"   ⚠ {w}")
+    if result.diagnostics.get("difficulty_relaxed"):
+        print("   ⚠ difficulty constraints relaxed to reach a feasible selection")
 
-        print_questions(questions, n=args.show)
-        print_distribution_table(questions)
-        return
+    quizzes = result.to_quizzes()
 
-    if use_rag:
-        print(f"\n🔍 RAG MODE — Building vector index from {total_chunks} chunks...")
-        from quizgen.index import ChunkIndex
-
-        index = ChunkIndex(persist_dir=args.index_dir)
-        indexed_count = index.build(chapters, force_rebuild=False)
-        print(f"   ✓ Vector index ready: {indexed_count} chunks indexed")
-
-        print(f"\n⏳ Generating questions with RAG (top-{args.rag_top_k} retrieval)...")
-        questions = generate_questions(
-            chapters,
-            per_chunk=args.per_chunk,
-            client=client,
-            use_rag=True,
-            index=index,
-            rag_top_k=args.rag_top_k,
-            check_grounding=not args.no_grounding_check,
-        )
+    # Resolve output paths.
+    if args.out_dir:
+        out_dir = Path(args.out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        paths = [out_dir / f"exam_v{i + 1}.json" for i in range(len(quizzes))]
     else:
-        print(f"\n⏳ Generating {args.per_chunk} question(s) per chunk ({total_chunks} chunks)...")
-        print(f"   Expected: ~{total_chunks * args.per_chunk} questions")
-        print("   Mode: Phase 1 (single-chunk generation)")
+        base = Path(args.out)
+        base.parent.mkdir(parents=True, exist_ok=True)
+        paths = [base if i == 0 else base.with_name(f"{base.stem}_v{i + 1}{base.suffix}")
+                 for i in range(len(quizzes))]
 
-        questions = generate_questions(
-            chapters, per_chunk=args.per_chunk, client=client, use_rag=False
-        )
+    all_ok = True
+    for i, (quiz, path) in enumerate(zip(quizzes, paths, strict=False), 1):
+        path.write_text(quiz.model_dump_json(indent=2))
+        _print_version_report(quiz, i)
+        print(f"   💾 Saved version {chr(64 + i)} -> {path}")
 
-    if not questions:
-        print("\n❌ No valid questions generated. Check your LLM endpoint in .env")
-        sys.exit(1)
+        if args.validate:
+            from quizgen.validate import report_to_markdown, validate_exam
 
-    # ── Step 3: Output ──────────────────────────────────────────────
-    title = args.title or f"Quiz — Chapters {args.chapters}"
-    blueprint = {
-        "chapters": chapter_nums,
-        "per_chunk": args.per_chunk,
-        "total_chunks": total_chunks,
-        "generation_mode": "RAG" if use_rag else "single-chunk",
-        "rag_top_k": args.rag_top_k if use_rag else None,
-        "grounding_check": not args.no_grounding_check if use_rag else None,
-    }
-    quiz = questions_to_quiz(questions, title=title, blueprint=blueprint)
+            report = validate_exam(quiz, blueprint, duplicate_threshold=blueprint.dedup_similarity)
+            md = report_to_markdown(report, title=f"Validation — {quiz.title}")
+            report_path = path.with_suffix(".report.md")
+            report_path.write_text(md)
+            print(f"   📝 Report -> {report_path}  ({'PASS' if report.passed else 'FAIL'})")
+            all_ok = all_ok and report.passed
 
-    out_path = Path(args.out)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(quiz.model_dump_json(indent=2))
-    print(f"\n💾 Saved {len(questions)} questions to {out_path}")
+    ok = all(_version_compliant(q, blueprint) for q in quizzes) and all_ok
+    print(f"\n{'✅' if ok else '❌'} "
+          f"{'All versions blueprint-compliant' if ok else 'MISMATCH — see report above'}")
+    sys.exit(0 if ok else 1)
 
-    # ── Step 4: Summary ─────────────────────────────────────────────
-    print_questions(questions, n=args.show)
-    print_summary(questions)
+
+def _print_version_report(quiz, n: int) -> None:
+    from collections import Counter
+
+    chap = Counter(q.chapter for q in quiz.questions)
+    diff = Counter(q.difficulty.value for q in quiz.questions)
+    print(f"\n   ── Version {chr(64 + n)} ({len(quiz.questions)} questions) ──")
+    print(f"      Per chapter: {dict(sorted(chap.items()))}")
+    print(f"      Difficulty:  {dict(diff)}")
+
+
+def _version_compliant(quiz, blueprint: Blueprint) -> bool:
+    from collections import Counter
+
+    chap = Counter(q.chapter for q in quiz.questions)
+    if blueprint.resolve_chapter_counts() and dict(chap) != blueprint.resolve_chapter_counts():
+        return False
+    return len(quiz.questions) == blueprint.total_questions
 
 
 if __name__ == "__main__":

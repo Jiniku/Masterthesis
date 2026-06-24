@@ -65,3 +65,6 @@ htmlcov/
 *.tmp
 *.bak
 *.backup
+
+# Keep the committed example question bank
+!questions.example.json

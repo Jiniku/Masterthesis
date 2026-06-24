@@ -1,8 +1,10 @@
-"""Application-wide configuration loaded from environment / ``.env``.
+"""Application configuration loaded from environment / ``.env``.
 
-All LLM provider settings live here.  Switching from GLM-5.2 to a local
-Ollama model (or OpenAI, etc.) is a matter of editing ``.env`` — no code
-changes required.
+The selection-only pipeline has a single optional knob: the embedding model
+used for *semantic* near-duplicate detection (``quizgen.dedup``). Everything
+else works with no configuration. If sentence-transformers isn't installed,
+dedup transparently falls back to a lexical (token-Jaccard) measure and this
+setting is never read.
 """
 
 from __future__ import annotations
@@ -13,25 +15,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Reads configuration from environment variables / ``.env`` file."""
 
-    # ── LLM provider ────────────────────────────────────────────────
-    llm_base_url: str = "http://localhost:11434/v1"
-    llm_api_key: str = "ollama"
-    llm_model: str = "qwen2.5:14b"
-
-    # ── Embedding (Phase 2+) ────────────────────────────────────────
+    # Embedding model for optional semantic deduplication.
     embedding_model: str = "all-MiniLM-L6-v2"
-
-    # ── Generation defaults ─────────────────────────────────────────
-    default_per_chunk: int = 2
-    default_temperature: float = 0.7
-
-    # ── Structured output (Phase 3) ─────────────────────────────────
-    # How the LLMClient forces schema-valid JSON. One of:
-    #   "auto"        – try strict json_schema, fall back to json_object, then text
-    #   "json_schema" – OpenAI/GLM strict structured-output mode (response_format)
-    #   "json_object" – loose JSON mode (provider validates only that it is JSON)
-    #   "outlines"    – local constrained decoding via the Outlines library
-    structured_output_mode: str = "auto"
 
     model_config = {
         "env_file": ".env",

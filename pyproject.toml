@@ -1,7 +1,7 @@
 [project]
 name = "quizgen"
-version = "0.1.0"
-description = "LLM-powered exam/quiz generator from textbooks — Master's thesis, KWARC group, FAU Erlangen-Nürnberg"
+version = "0.2.0"
+description = "Automated Test Assembly — select blueprint-compliant exams from a question bank. Master's thesis, KWARC group, FAU Erlangen-Nürnberg"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Jinikuhayashi" }]
@@ -9,11 +9,8 @@ authors = [{ name = "Jinikuhayashi" }]
 dependencies = [
     "pydantic>=2.7,<3",
     "pydantic-settings>=2.3,<3",
-    "openai>=1.30,<2",
-    "python-dotenv>=1.0,<2",
-    "tiktoken>=0.7,<1",
-    "pymupdf>=1.24",
     "pyyaml>=6.0",
+    "pulp>=2.8",
 ]
 
 [project.optional-dependencies]
@@ -22,15 +19,10 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.4",
 ]
-# Phase 2+
-rag = [
-    "chromadb>=0.5",
+# Optional: semantic (embedding) deduplication. Without it, dedup falls back
+# to a dependency-free token-overlap measure.
+embeddings = [
     "sentence-transformers>=3.0",
-]
-# Phase 4+
-assembly = [
-    "pulp>=2.8",
-    "pyyaml>=6.0",
 ]
 
 [build-system]

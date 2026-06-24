@@ -160,30 +160,6 @@ class Quiz(BaseModel):
     }
 
 
-# ── Structured-output schema for generation batches ────────────────
-
-
-def question_batch_schema() -> dict[str, Any]:
-    """JSON Schema for a ``{"questions": [Question, ...]}`` generation batch.
-
-    Used as the strict ``response_format`` schema (Phase 3) so the provider
-    forces the model to return a JSON object whose ``questions`` array matches
-    the :class:`Question` shape.  Pydantic still validates the result — this
-    only guarantees the container.
-    """
-    return {
-        "type": "object",
-        "properties": {
-            "questions": {
-                "type": "array",
-                "items": Question.model_json_schema(),
-            }
-        },
-        "required": ["questions"],
-        "additionalProperties": False,
-    }
-
-
 # ── JSON Schema export ──────────────────────────────────────────────
 
 

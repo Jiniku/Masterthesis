@@ -1,0 +1,1306 @@
+{
+  "quiz_id": "12f0ad33fd0b",
+  "title": "Example Question Bank (AI-1)",
+  "created_at": "2026-06-24T13:03:08.790995Z",
+  "blueprint": {
+    "note": "hand-authored / imported pool"
+  },
+  "questions": [
+    {
+      "id": "q000",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term uninformed search (variant 1). [Q0]",
+      "options": [
+        "A) the correct account of uninformed search (variant 1)",
+        "B) a deprecated heuristic",
+        "C) a coincidental string match",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of uninformed search (variant 1); the others are distractors.",
+      "source_ref": "ch1_sec1_q0"
+    },
+    {
+      "id": "q001",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare A* heuristics (variant 1) against a naive alternative. [Q1]",
+      "options": [
+        "A) the correct account of A* heuristics (variant 1)",
+        "B) a misleading special case",
+        "C) an unrelated lookup table",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of A* heuristics (variant 1); the others are distractors.",
+      "source_ref": "ch1_sec2_q1"
+    },
+    {
+      "id": "q002",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether alpha-beta pruning (variant 1) guarantees optimality. [Q2]",
+      "options": [
+        "A) the correct account of alpha-beta pruning (variant 1)",
+        "B) an off-topic optimisation",
+        "C) an unrelated lookup table",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of alpha-beta pruning (variant 1); the others are distractors.",
+      "source_ref": "ch1_sec3_q2"
+    },
+    {
+      "id": "q003",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term propositional resolution (variant 1). [Q3]",
+      "options": [
+        "A) the correct account of propositional resolution (variant 1)",
+        "B) an off-topic optimisation",
+        "C) an unrelated lookup table",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of propositional resolution (variant 1); the others are distractors.",
+      "source_ref": "ch1_sec4_q3"
+    },
+    {
+      "id": "q004",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare first-order unification (variant 1) against a naive alternative. [Q4]",
+      "options": [
+        "A) the correct account of first-order unification (variant 1)",
+        "B) an unrelated lookup table",
+        "C) a misleading special case",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of first-order unification (variant 1); the others are distractors.",
+      "source_ref": "ch1_sec1_q4"
+    },
+    {
+      "id": "q005",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether forward chaining (variant 1) guarantees optimality. [Q5]",
+      "options": [
+        "A) the correct account of forward chaining (variant 1)",
+        "B) a brute-force enumeration",
+        "C) an unrelated lookup table",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of forward chaining (variant 1); the others are distractors.",
+      "source_ref": "ch1_sec2_q5"
+    },
+    {
+      "id": "q006",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term backward chaining (variant 1). [Q6]",
+      "options": [
+        "A) the correct account of backward chaining (variant 1)",
+        "B) an unrelated lookup table",
+        "C) an off-topic optimisation",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of backward chaining (variant 1); the others are distractors.",
+      "source_ref": "ch1_sec3_q6"
+    },
+    {
+      "id": "q007",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare STRIPS planning (variant 1) against a naive alternative. [Q7]",
+      "options": [
+        "A) the correct account of STRIPS planning (variant 1)",
+        "B) an unrelated lookup table",
+        "C) an off-topic optimisation",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of STRIPS planning (variant 1); the others are distractors.",
+      "source_ref": "ch1_sec4_q7"
+    },
+    {
+      "id": "q008",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether uninformed search (variant 2) guarantees optimality. [Q8]",
+      "options": [
+        "A) the correct account of uninformed search (variant 2)",
+        "B) a coincidental string match",
+        "C) an off-topic optimisation",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of uninformed search (variant 2); the others are distractors.",
+      "source_ref": "ch1_sec1_q8"
+    },
+    {
+      "id": "q009",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term A* heuristics (variant 2). [Q9]",
+      "options": [
+        "A) the correct account of A* heuristics (variant 2)",
+        "B) an off-topic optimisation",
+        "C) a misleading special case",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of A* heuristics (variant 2); the others are distractors.",
+      "source_ref": "ch1_sec2_q9"
+    },
+    {
+      "id": "q010",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare alpha-beta pruning (variant 2) against a naive alternative. [Q10]",
+      "options": [
+        "A) the correct account of alpha-beta pruning (variant 2)",
+        "B) an unrelated lookup table",
+        "C) a coincidental string match",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of alpha-beta pruning (variant 2); the others are distractors.",
+      "source_ref": "ch1_sec3_q10"
+    },
+    {
+      "id": "q011",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether propositional resolution (variant 2) guarantees optimality. [Q11]",
+      "options": [
+        "A) the correct account of propositional resolution (variant 2)",
+        "B) an off-topic optimisation",
+        "C) a coincidental string match",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of propositional resolution (variant 2); the others are distractors.",
+      "source_ref": "ch1_sec4_q11"
+    },
+    {
+      "id": "q012",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term first-order unification (variant 2). [Q12]",
+      "options": [
+        "A) the correct account of first-order unification (variant 2)",
+        "B) a brute-force enumeration",
+        "C) a coincidental string match",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of first-order unification (variant 2); the others are distractors.",
+      "source_ref": "ch1_sec1_q12"
+    },
+    {
+      "id": "q013",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare forward chaining (variant 2) against a naive alternative. [Q13]",
+      "options": [
+        "A) the correct account of forward chaining (variant 2)",
+        "B) an off-topic optimisation",
+        "C) a deprecated heuristic",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of forward chaining (variant 2); the others are distractors.",
+      "source_ref": "ch1_sec2_q13"
+    },
+    {
+      "id": "q014",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether backward chaining (variant 2) guarantees optimality. [Q14]",
+      "options": [
+        "A) the correct account of backward chaining (variant 2)",
+        "B) an unrelated lookup table",
+        "C) an off-topic optimisation",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of backward chaining (variant 2); the others are distractors.",
+      "source_ref": "ch1_sec3_q14"
+    },
+    {
+      "id": "q015",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term STRIPS planning (variant 2). [Q15]",
+      "options": [
+        "A) the correct account of STRIPS planning (variant 2)",
+        "B) a deprecated heuristic",
+        "C) an unrelated lookup table",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of STRIPS planning (variant 2); the others are distractors.",
+      "source_ref": "ch1_sec4_q15"
+    },
+    {
+      "id": "q016",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare uninformed search (variant 3) against a naive alternative. [Q16]",
+      "options": [
+        "A) the correct account of uninformed search (variant 3)",
+        "B) an off-topic optimisation",
+        "C) an unrelated lookup table",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of uninformed search (variant 3); the others are distractors.",
+      "source_ref": "ch1_sec1_q16"
+    },
+    {
+      "id": "q017",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether A* heuristics (variant 3) guarantees optimality. [Q17]",
+      "options": [
+        "A) the correct account of A* heuristics (variant 3)",
+        "B) a brute-force enumeration",
+        "C) an off-topic optimisation",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of A* heuristics (variant 3); the others are distractors.",
+      "source_ref": "ch1_sec2_q17"
+    },
+    {
+      "id": "q018",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term alpha-beta pruning (variant 3). [Q18]",
+      "options": [
+        "A) the correct account of alpha-beta pruning (variant 3)",
+        "B) a deprecated heuristic",
+        "C) a brute-force enumeration",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of alpha-beta pruning (variant 3); the others are distractors.",
+      "source_ref": "ch1_sec3_q18"
+    },
+    {
+      "id": "q019",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare propositional resolution (variant 3) against a naive alternative. [Q19]",
+      "options": [
+        "A) the correct account of propositional resolution (variant 3)",
+        "B) a deprecated heuristic",
+        "C) a misleading special case",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of propositional resolution (variant 3); the others are distractors.",
+      "source_ref": "ch1_sec4_q19"
+    },
+    {
+      "id": "q020",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether first-order unification (variant 3) guarantees optimality. [Q20]",
+      "options": [
+        "A) the correct account of first-order unification (variant 3)",
+        "B) a coincidental string match",
+        "C) a misleading special case",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of first-order unification (variant 3); the others are distractors.",
+      "source_ref": "ch1_sec1_q20"
+    },
+    {
+      "id": "q021",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term forward chaining (variant 3). [Q21]",
+      "options": [
+        "A) the correct account of forward chaining (variant 3)",
+        "B) an off-topic optimisation",
+        "C) a deprecated heuristic",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of forward chaining (variant 3); the others are distractors.",
+      "source_ref": "ch1_sec2_q21"
+    },
+    {
+      "id": "q022",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare backward chaining (variant 3) against a naive alternative. [Q22]",
+      "options": [
+        "A) the correct account of backward chaining (variant 3)",
+        "B) a deprecated heuristic",
+        "C) a brute-force enumeration",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of backward chaining (variant 3); the others are distractors.",
+      "source_ref": "ch1_sec3_q22"
+    },
+    {
+      "id": "q023",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether STRIPS planning (variant 3) guarantees optimality. [Q23]",
+      "options": [
+        "A) the correct account of STRIPS planning (variant 3)",
+        "B) an off-topic optimisation",
+        "C) an unrelated lookup table",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of STRIPS planning (variant 3); the others are distractors.",
+      "source_ref": "ch1_sec4_q23"
+    },
+    {
+      "id": "q024",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term partial-order planning (variant 1). [Q24]",
+      "options": [
+        "A) the correct account of partial-order planning (variant 1)",
+        "B) an off-topic optimisation",
+        "C) a brute-force enumeration",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of partial-order planning (variant 1); the others are distractors.",
+      "source_ref": "ch2_sec1_q24"
+    },
+    {
+      "id": "q025",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare Bayesian networks (variant 1) against a naive alternative. [Q25]",
+      "options": [
+        "A) the correct account of Bayesian networks (variant 1)",
+        "B) a deprecated heuristic",
+        "C) a coincidental string match",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of Bayesian networks (variant 1); the others are distractors.",
+      "source_ref": "ch2_sec2_q25"
+    },
+    {
+      "id": "q026",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether hidden Markov models (variant 1) guarantees optimality. [Q26]",
+      "options": [
+        "A) the correct account of hidden Markov models (variant 1)",
+        "B) a brute-force enumeration",
+        "C) an unrelated lookup table",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of hidden Markov models (variant 1); the others are distractors.",
+      "source_ref": "ch2_sec3_q26"
+    },
+    {
+      "id": "q027",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term the perceptron (variant 1). [Q27]",
+      "options": [
+        "A) the correct account of the perceptron (variant 1)",
+        "B) an off-topic optimisation",
+        "C) a misleading special case",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of the perceptron (variant 1); the others are distractors.",
+      "source_ref": "ch2_sec4_q27"
+    },
+    {
+      "id": "q028",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare decision trees (variant 1) against a naive alternative. [Q28]",
+      "options": [
+        "A) the correct account of decision trees (variant 1)",
+        "B) a deprecated heuristic",
+        "C) a misleading special case",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of decision trees (variant 1); the others are distractors.",
+      "source_ref": "ch2_sec1_q28"
+    },
+    {
+      "id": "q029",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether reinforcement signals (variant 1) guarantees optimality. [Q29]",
+      "options": [
+        "A) the correct account of reinforcement signals (variant 1)",
+        "B) an off-topic optimisation",
+        "C) a brute-force enumeration",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of reinforcement signals (variant 1); the others are distractors.",
+      "source_ref": "ch2_sec2_q29"
+    },
+    {
+      "id": "q030",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term the closed-world assumption (variant 1). [Q30]",
+      "options": [
+        "A) the correct account of the closed-world assumption (variant 1)",
+        "B) an unrelated lookup table",
+        "C) a deprecated heuristic",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of the closed-world assumption (variant 1); the others are distractors.",
+      "source_ref": "ch2_sec3_q30"
+    },
+    {
+      "id": "q031",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare description logics (variant 1) against a naive alternative. [Q31]",
+      "options": [
+        "A) the correct account of description logics (variant 1)",
+        "B) a misleading special case",
+        "C) an unrelated lookup table",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of description logics (variant 1); the others are distractors.",
+      "source_ref": "ch2_sec4_q31"
+    },
+    {
+      "id": "q032",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether partial-order planning (variant 2) guarantees optimality. [Q32]",
+      "options": [
+        "A) the correct account of partial-order planning (variant 2)",
+        "B) a misleading special case",
+        "C) a deprecated heuristic",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of partial-order planning (variant 2); the others are distractors.",
+      "source_ref": "ch2_sec1_q32"
+    },
+    {
+      "id": "q033",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term Bayesian networks (variant 2). [Q33]",
+      "options": [
+        "A) the correct account of Bayesian networks (variant 2)",
+        "B) a deprecated heuristic",
+        "C) a brute-force enumeration",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of Bayesian networks (variant 2); the others are distractors.",
+      "source_ref": "ch2_sec2_q33"
+    },
+    {
+      "id": "q034",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare hidden Markov models (variant 2) against a naive alternative. [Q34]",
+      "options": [
+        "A) the correct account of hidden Markov models (variant 2)",
+        "B) an unrelated lookup table",
+        "C) a brute-force enumeration",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of hidden Markov models (variant 2); the others are distractors.",
+      "source_ref": "ch2_sec3_q34"
+    },
+    {
+      "id": "q035",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether the perceptron (variant 2) guarantees optimality. [Q35]",
+      "options": [
+        "A) the correct account of the perceptron (variant 2)",
+        "B) a coincidental string match",
+        "C) an off-topic optimisation",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of the perceptron (variant 2); the others are distractors.",
+      "source_ref": "ch2_sec4_q35"
+    },
+    {
+      "id": "q036",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term decision trees (variant 2). [Q36]",
+      "options": [
+        "A) the correct account of decision trees (variant 2)",
+        "B) a brute-force enumeration",
+        "C) an unrelated lookup table",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of decision trees (variant 2); the others are distractors.",
+      "source_ref": "ch2_sec1_q36"
+    },
+    {
+      "id": "q037",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare reinforcement signals (variant 2) against a naive alternative. [Q37]",
+      "options": [
+        "A) the correct account of reinforcement signals (variant 2)",
+        "B) a deprecated heuristic",
+        "C) a coincidental string match",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of reinforcement signals (variant 2); the others are distractors.",
+      "source_ref": "ch2_sec2_q37"
+    },
+    {
+      "id": "q038",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether the closed-world assumption (variant 2) guarantees optimality. [Q38]",
+      "options": [
+        "A) the correct account of the closed-world assumption (variant 2)",
+        "B) a brute-force enumeration",
+        "C) a misleading special case",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of the closed-world assumption (variant 2); the others are distractors.",
+      "source_ref": "ch2_sec3_q38"
+    },
+    {
+      "id": "q039",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term description logics (variant 2). [Q39]",
+      "options": [
+        "A) the correct account of description logics (variant 2)",
+        "B) an unrelated lookup table",
+        "C) a coincidental string match",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of description logics (variant 2); the others are distractors.",
+      "source_ref": "ch2_sec4_q39"
+    },
+    {
+      "id": "q040",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare partial-order planning (variant 3) against a naive alternative. [Q40]",
+      "options": [
+        "A) the correct account of partial-order planning (variant 3)",
+        "B) a brute-force enumeration",
+        "C) an off-topic optimisation",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of partial-order planning (variant 3); the others are distractors.",
+      "source_ref": "ch2_sec1_q40"
+    },
+    {
+      "id": "q041",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether Bayesian networks (variant 3) guarantees optimality. [Q41]",
+      "options": [
+        "A) the correct account of Bayesian networks (variant 3)",
+        "B) a coincidental string match",
+        "C) a brute-force enumeration",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of Bayesian networks (variant 3); the others are distractors.",
+      "source_ref": "ch2_sec2_q41"
+    },
+    {
+      "id": "q042",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term hidden Markov models (variant 3). [Q42]",
+      "options": [
+        "A) the correct account of hidden Markov models (variant 3)",
+        "B) a misleading special case",
+        "C) a brute-force enumeration",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of hidden Markov models (variant 3); the others are distractors.",
+      "source_ref": "ch2_sec3_q42"
+    },
+    {
+      "id": "q043",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare the perceptron (variant 3) against a naive alternative. [Q43]",
+      "options": [
+        "A) the correct account of the perceptron (variant 3)",
+        "B) a misleading special case",
+        "C) a brute-force enumeration",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of the perceptron (variant 3); the others are distractors.",
+      "source_ref": "ch2_sec4_q43"
+    },
+    {
+      "id": "q044",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether decision trees (variant 3) guarantees optimality. [Q44]",
+      "options": [
+        "A) the correct account of decision trees (variant 3)",
+        "B) a coincidental string match",
+        "C) an unrelated lookup table",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of decision trees (variant 3); the others are distractors.",
+      "source_ref": "ch2_sec1_q44"
+    },
+    {
+      "id": "q045",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term reinforcement signals (variant 3). [Q45]",
+      "options": [
+        "A) the correct account of reinforcement signals (variant 3)",
+        "B) a coincidental string match",
+        "C) a misleading special case",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of reinforcement signals (variant 3); the others are distractors.",
+      "source_ref": "ch2_sec2_q45"
+    },
+    {
+      "id": "q046",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare the closed-world assumption (variant 3) against a naive alternative. [Q46]",
+      "options": [
+        "A) the correct account of the closed-world assumption (variant 3)",
+        "B) an unrelated lookup table",
+        "C) a brute-force enumeration",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of the closed-world assumption (variant 3); the others are distractors.",
+      "source_ref": "ch2_sec3_q46"
+    },
+    {
+      "id": "q047",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether description logics (variant 3) guarantees optimality. [Q47]",
+      "options": [
+        "A) the correct account of description logics (variant 3)",
+        "B) a deprecated heuristic",
+        "C) a misleading special case",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of description logics (variant 3); the others are distractors.",
+      "source_ref": "ch2_sec4_q47"
+    },
+    {
+      "id": "q048",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term constraint propagation (variant 1). [Q48]",
+      "options": [
+        "A) the correct account of constraint propagation (variant 1)",
+        "B) a coincidental string match",
+        "C) a brute-force enumeration",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of constraint propagation (variant 1); the others are distractors.",
+      "source_ref": "ch3_sec1_q48"
+    },
+    {
+      "id": "q049",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare arc consistency (variant 1) against a naive alternative. [Q49]",
+      "options": [
+        "A) the correct account of arc consistency (variant 1)",
+        "B) an off-topic optimisation",
+        "C) a misleading special case",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of arc consistency (variant 1); the others are distractors.",
+      "source_ref": "ch3_sec2_q49"
+    },
+    {
+      "id": "q050",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether minimax backups (variant 1) guarantees optimality. [Q50]",
+      "options": [
+        "A) the correct account of minimax backups (variant 1)",
+        "B) a coincidental string match",
+        "C) an off-topic optimisation",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of minimax backups (variant 1); the others are distractors.",
+      "source_ref": "ch3_sec3_q50"
+    },
+    {
+      "id": "q051",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term utility theory (variant 1). [Q51]",
+      "options": [
+        "A) the correct account of utility theory (variant 1)",
+        "B) a brute-force enumeration",
+        "C) an off-topic optimisation",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of utility theory (variant 1); the others are distractors.",
+      "source_ref": "ch3_sec4_q51"
+    },
+    {
+      "id": "q052",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare Markov decision processes (variant 1) against a naive alternative. [Q52]",
+      "options": [
+        "A) the correct account of Markov decision processes (variant 1)",
+        "B) a brute-force enumeration",
+        "C) a misleading special case",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of Markov decision processes (variant 1); the others are distractors.",
+      "source_ref": "ch3_sec1_q52"
+    },
+    {
+      "id": "q053",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether naive Bayes (variant 1) guarantees optimality. [Q53]",
+      "options": [
+        "A) the correct account of naive Bayes (variant 1)",
+        "B) an unrelated lookup table",
+        "C) a brute-force enumeration",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of naive Bayes (variant 1); the others are distractors.",
+      "source_ref": "ch3_sec2_q53"
+    },
+    {
+      "id": "q054",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term k-means clustering (variant 1). [Q54]",
+      "options": [
+        "A) the correct account of k-means clustering (variant 1)",
+        "B) an unrelated lookup table",
+        "C) a coincidental string match",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of k-means clustering (variant 1); the others are distractors.",
+      "source_ref": "ch3_sec3_q54"
+    },
+    {
+      "id": "q055",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare gradient descent (variant 1) against a naive alternative. [Q55]",
+      "options": [
+        "A) the correct account of gradient descent (variant 1)",
+        "B) a coincidental string match",
+        "C) a brute-force enumeration",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of gradient descent (variant 1); the others are distractors.",
+      "source_ref": "ch3_sec4_q55"
+    },
+    {
+      "id": "q056",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether constraint propagation (variant 2) guarantees optimality. [Q56]",
+      "options": [
+        "A) the correct account of constraint propagation (variant 2)",
+        "B) an unrelated lookup table",
+        "C) a deprecated heuristic",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of constraint propagation (variant 2); the others are distractors.",
+      "source_ref": "ch3_sec1_q56"
+    },
+    {
+      "id": "q057",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term arc consistency (variant 2). [Q57]",
+      "options": [
+        "A) the correct account of arc consistency (variant 2)",
+        "B) an unrelated lookup table",
+        "C) a misleading special case",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of arc consistency (variant 2); the others are distractors.",
+      "source_ref": "ch3_sec2_q57"
+    },
+    {
+      "id": "q058",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare minimax backups (variant 2) against a naive alternative. [Q58]",
+      "options": [
+        "A) the correct account of minimax backups (variant 2)",
+        "B) an off-topic optimisation",
+        "C) an unrelated lookup table",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of minimax backups (variant 2); the others are distractors.",
+      "source_ref": "ch3_sec3_q58"
+    },
+    {
+      "id": "q059",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether utility theory (variant 2) guarantees optimality. [Q59]",
+      "options": [
+        "A) the correct account of utility theory (variant 2)",
+        "B) an off-topic optimisation",
+        "C) an unrelated lookup table",
+        "D) a misleading special case"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of utility theory (variant 2); the others are distractors.",
+      "source_ref": "ch3_sec4_q59"
+    },
+    {
+      "id": "q060",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term Markov decision processes (variant 2). [Q60]",
+      "options": [
+        "A) the correct account of Markov decision processes (variant 2)",
+        "B) a coincidental string match",
+        "C) an off-topic optimisation",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of Markov decision processes (variant 2); the others are distractors.",
+      "source_ref": "ch3_sec1_q60"
+    },
+    {
+      "id": "q061",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare naive Bayes (variant 2) against a naive alternative. [Q61]",
+      "options": [
+        "A) the correct account of naive Bayes (variant 2)",
+        "B) a coincidental string match",
+        "C) a deprecated heuristic",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of naive Bayes (variant 2); the others are distractors.",
+      "source_ref": "ch3_sec2_q61"
+    },
+    {
+      "id": "q062",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether k-means clustering (variant 2) guarantees optimality. [Q62]",
+      "options": [
+        "A) the correct account of k-means clustering (variant 2)",
+        "B) an off-topic optimisation",
+        "C) a deprecated heuristic",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of k-means clustering (variant 2); the others are distractors.",
+      "source_ref": "ch3_sec3_q62"
+    },
+    {
+      "id": "q063",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term gradient descent (variant 2). [Q63]",
+      "options": [
+        "A) the correct account of gradient descent (variant 2)",
+        "B) an unrelated lookup table",
+        "C) a misleading special case",
+        "D) a brute-force enumeration"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of gradient descent (variant 2); the others are distractors.",
+      "source_ref": "ch3_sec4_q63"
+    },
+    {
+      "id": "q064",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare constraint propagation (variant 3) against a naive alternative. [Q64]",
+      "options": [
+        "A) the correct account of constraint propagation (variant 3)",
+        "B) a brute-force enumeration",
+        "C) a misleading special case",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of constraint propagation (variant 3); the others are distractors.",
+      "source_ref": "ch3_sec1_q64"
+    },
+    {
+      "id": "q065",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether arc consistency (variant 3) guarantees optimality. [Q65]",
+      "options": [
+        "A) the correct account of arc consistency (variant 3)",
+        "B) a deprecated heuristic",
+        "C) an unrelated lookup table",
+        "D) a coincidental string match"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of arc consistency (variant 3); the others are distractors.",
+      "source_ref": "ch3_sec2_q65"
+    },
+    {
+      "id": "q066",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Define the term minimax backups (variant 3). [Q66]",
+      "options": [
+        "A) the correct account of minimax backups (variant 3)",
+        "B) an unrelated lookup table",
+        "C) a deprecated heuristic",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of minimax backups (variant 3); the others are distractors.",
+      "source_ref": "ch3_sec3_q66"
+    },
+    {
+      "id": "q067",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Compare utility theory (variant 3) against a naive alternative. [Q67]",
+      "options": [
+        "A) the correct account of utility theory (variant 3)",
+        "B) a brute-force enumeration",
+        "C) a coincidental string match",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of utility theory (variant 3); the others are distractors.",
+      "source_ref": "ch3_sec4_q67"
+    },
+    {
+      "id": "q068",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Justify whether Markov decision processes (variant 3) guarantees optimality. [Q68]",
+      "options": [
+        "A) the correct account of Markov decision processes (variant 3)",
+        "B) a coincidental string match",
+        "C) an off-topic optimisation",
+        "D) a deprecated heuristic"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of Markov decision processes (variant 3); the others are distractors.",
+      "source_ref": "ch3_sec1_q68"
+    },
+    {
+      "id": "q069",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Define the term naive Bayes (variant 3). [Q69]",
+      "options": [
+        "A) the correct account of naive Bayes (variant 3)",
+        "B) a coincidental string match",
+        "C) an off-topic optimisation",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of naive Bayes (variant 3); the others are distractors.",
+      "source_ref": "ch3_sec2_q69"
+    },
+    {
+      "id": "q070",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Compare k-means clustering (variant 3) against a naive alternative. [Q70]",
+      "options": [
+        "A) the correct account of k-means clustering (variant 3)",
+        "B) an off-topic optimisation",
+        "C) a deprecated heuristic",
+        "D) an unrelated lookup table"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of k-means clustering (variant 3); the others are distractors.",
+      "source_ref": "ch3_sec3_q70"
+    },
+    {
+      "id": "q071",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Justify whether gradient descent (variant 3) guarantees optimality. [Q71]",
+      "options": [
+        "A) the correct account of gradient descent (variant 3)",
+        "B) a misleading special case",
+        "C) a deprecated heuristic",
+        "D) an off-topic optimisation"
+      ],
+      "answer": "A",
+      "explanation": "Option A states the correct account of gradient descent (variant 3); the others are distractors.",
+      "source_ref": "ch3_sec4_q71"
+    }
+  ]
+}

@@ -21,8 +21,60 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, Field, field_validator
 
-from quizgen.bloom import _largest_remainder, build_difficulty_plan
 from quizgen.schema import Difficulty, QuestionType
+
+# ── Apportionment helpers ───────────────────────────────────────────
+#
+# These turn fractional targets into integer counts that sum exactly to the
+# total, using the largest-remainder (Hamilton) method.  They live here
+# because blueprint resolution is their only consumer.
+
+_DEFAULT_DIFFICULTY_MIX: dict[Difficulty, float] = {
+    Difficulty.EASY: 0.4,
+    Difficulty.MEDIUM: 0.4,
+    Difficulty.HARD: 0.2,
+}
+
+
+def _largest_remainder(weights: dict, total: int) -> dict:
+    """Allocate *total* integer units across *weights* (fractions summing ~1).
+
+    Guarantees the allocation sums to exactly *total*.
+    """
+    raw = {k: w * total for k, w in weights.items()}
+    floors = {k: int(v) for k, v in raw.items()}
+    allocated = sum(floors.values())
+    remainder = total - allocated
+
+    # Hand out leftover units to the largest fractional remainders.
+    order = sorted(raw, key=lambda k: raw[k] - floors[k], reverse=True)
+    for k in order[:remainder]:
+        floors[k] += 1
+    return floors
+
+
+def build_difficulty_plan(
+    total: int,
+    mix: dict[str, float] | dict[Difficulty, float] | None = None,
+) -> dict[Difficulty, int]:
+    """Turn a target difficulty *mix* (fractions) into integer counts.
+
+    The largest-remainder method is used so the counts always sum to *total*
+    exactly, even when the fractions don't divide evenly.  Defaults to a
+    40 / 40 / 20 easy/medium/hard spread.
+    """
+    if mix is None:
+        mix = dict(_DEFAULT_DIFFICULTY_MIX)
+
+    # Normalise keys to Difficulty enums and drop non-positive weights.
+    norm: dict[Difficulty, float] = {}
+    for key, frac in mix.items():
+        diff = key if isinstance(key, Difficulty) else Difficulty(str(key))
+        if frac > 0:
+            norm[diff] = float(frac)
+
+    weight_sum = sum(norm.values()) or 1.0
+    return _largest_remainder({d: w / weight_sum for d, w in norm.items()}, total)
 
 
 class Blueprint(BaseModel):
