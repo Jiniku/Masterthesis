@@ -32,9 +32,41 @@ from pydantic import ValidationError
 
 from quizgen.ingest import Chapter, Chunk
 from quizgen.llm_client import LLMClient
-from quizgen.schema import Question, Quiz
+from quizgen.schema import Question, QuestionType, Quiz
 
 logger = logging.getLogger(__name__)
+
+# Round-robin order used to assign an explicit qtype to every requested
+# question.  This is what guarantees a *mix* of types rather than relying on
+# the model to honour a soft "vary the types" instruction (which it ignores,
+# defaulting to MCQ).  A running cursor across chunks keeps the global
+# distribution balanced even when ``per_chunk`` is smaller than the number of
+# types.
+QTYPE_ROTATION: list[QuestionType] = [
+    QuestionType.MCQ,
+    QuestionType.TRUE_FALSE,
+    QuestionType.SHORT_ANSWER,
+    QuestionType.CLOZE,
+]
+
+
+def _assign_qtypes(n: int, offset: int = 0) -> list[QuestionType]:
+    """Return *n* qtypes by round-robin over :data:`QTYPE_ROTATION`.
+
+    ``offset`` rotates the starting point so successive chunks don't all
+    begin with MCQ — important when ``n`` < ``len(QTYPE_ROTATION)``.
+    """
+    return [QTYPE_ROTATION[(offset + i) % len(QTYPE_ROTATION)] for i in range(n)]
+
+
+def _format_type_spec(qtypes: list[QuestionType]) -> str:
+    """Render the per-question type assignment as an instruction block."""
+    lines = "\n".join(f"  {i}. {qt.value}" for i, qt in enumerate(qtypes, 1))
+    return (
+        "You MUST set the qtype of each question to the type assigned below, "
+        "in this exact order:\n"
+        f"{lines}"
+    )
 
 # ── Prompt templates ────────────────────────────────────────────────
 
@@ -45,7 +77,7 @@ You create high-quality, schema-valid questions that are grounded ONLY in the pr
 Rules:
 1. Every question MUST be answerable using ONLY the provided text passage.
 2. Do NOT use any knowledge beyond the passage.
-3. Vary question types: mcq, true_false, short_answer, cloze.
+3. Each question is assigned a specific qtype in the user message — honour it exactly. Supported types: mcq, true_false, short_answer, cloze.
 4. Vary Bloom's taxonomy levels: remember, understand, apply, analyze, evaluate, create.
 5. Vary difficulty: easy, medium, hard.
 6. For MCQ questions, provide exactly 4 options (A, B, C, D) and set answer to the correct letter.
@@ -66,13 +98,16 @@ TEXT PASSAGE:
 {text}
 ---
 
-Respond with a JSON object:
+{type_spec}
+
+Respond with a JSON object whose "questions" array follows this shape. The
+examples below show one of each format — match the shape to the assigned qtype:
 {{
   "questions": [
     {{
       "chapter": {chapter_num},
       "section": "{section_label}",
-      "qtype": "mcq|true_false|short_answer|cloze",
+      "qtype": "mcq",
       "bloom_level": "remember|understand|apply|analyze|evaluate|create",
       "difficulty": "easy|medium|hard",
       "stem": "The question text...",
@@ -80,12 +115,53 @@ Respond with a JSON object:
       "answer": "B",
       "explanation": "Why this is correct (≥10 chars)...",
       "source_ref": "{chunk_id}"
+    }},
+    {{
+      "chapter": {chapter_num},
+      "section": "{section_label}",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "A claim that is either true or false...",
+      "options": null,
+      "answer": "True",
+      "explanation": "Why this is correct (≥10 chars)...",
+      "source_ref": "{chunk_id}"
+    }},
+    {{
+      "chapter": {chapter_num},
+      "section": "{section_label}",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "An open question requiring a short written answer...",
+      "options": null,
+      "answer": "The expected answer text...",
+      "explanation": "Why this is correct (≥10 chars)...",
+      "source_ref": "{chunk_id}"
+    }},
+    {{
+      "chapter": {chapter_num},
+      "section": "{section_label}",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "A sentence with a ___ to fill in...",
+      "options": null,
+      "answer": "the missing word(s)",
+      "explanation": "Why this is correct (≥10 chars)...",
+      "source_ref": "{chunk_id}"
     }}
   ]
 }}
 
-For non-MCQ questions, set "options" to null.
-Generate exactly {n} questions with varied types, Bloom levels, and difficulties.
+Rules for the shapes:
+- mcq: provide exactly 4 "options" (A–D) and set "answer" to the correct letter.
+- true_false: set "options" to null and "answer" to "True" or "False".
+- short_answer / cloze: set "options" to null and "answer" to the expected text.
+
+Generate exactly {n} questions, honouring the assigned qtypes above and varying
+Bloom levels and difficulties.
 """
 
 # ── RAG-specific prompts ────────────────────────────────────────────
@@ -97,7 +173,7 @@ You create high-quality, schema-valid questions that are grounded ONLY in the pr
 Rules:
 1. Every question MUST be answerable using ONLY the provided text passages.
 2. Do NOT use any knowledge beyond the passages.
-3. Vary question types: mcq, true_false, short_answer, cloze.
+3. Each question is assigned a specific qtype in the user message — honour it exactly. Supported types: mcq, true_false, short_answer, cloze.
 4. Vary Bloom's taxonomy levels: remember, understand, apply, analyze, evaluate, create.
 5. Vary difficulty: easy, medium, hard.
 6. For MCQ questions, provide exactly 4 options (A, B, C, D) and set answer to the correct letter.
@@ -117,13 +193,16 @@ Generate exactly {n} exam questions based ONLY on the following text passages re
 
 ---
 
-Respond with a JSON object:
+{type_spec}
+
+Respond with a JSON object whose "questions" array follows this shape. The
+examples below show one of each format — match the shape to the assigned qtype:
 {{
   "questions": [
     {{
       "chapter": {chapter_num},
       "section": "{section_label}",
-      "qtype": "mcq|true_false|short_answer|cloze",
+      "qtype": "mcq",
       "bloom_level": "remember|understand|apply|analyze|evaluate|create",
       "difficulty": "easy|medium|hard",
       "stem": "The question text...",
@@ -131,13 +210,54 @@ Respond with a JSON object:
       "answer": "B",
       "explanation": "Why this is correct (≥10 chars)...",
       "source_ref": "chunk_id_used_from_above"
+    }},
+    {{
+      "chapter": {chapter_num},
+      "section": "{section_label}",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "A claim that is either true or false...",
+      "options": null,
+      "answer": "True",
+      "explanation": "Why this is correct (≥10 chars)...",
+      "source_ref": "chunk_id_used_from_above"
+    }},
+    {{
+      "chapter": {chapter_num},
+      "section": "{section_label}",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "An open question requiring a short written answer...",
+      "options": null,
+      "answer": "The expected answer text...",
+      "explanation": "Why this is correct (≥10 chars)...",
+      "source_ref": "chunk_id_used_from_above"
+    }},
+    {{
+      "chapter": {chapter_num},
+      "section": "{section_label}",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "A sentence with a ___ to fill in...",
+      "options": null,
+      "answer": "the missing word(s)",
+      "explanation": "Why this is correct (≥10 chars)...",
+      "source_ref": "chunk_id_used_from_above"
     }}
   ]
 }}
 
-For non-MCQ questions, set "options" to null.
-Generate exactly {n} questions with varied types, Bloom levels, and difficulties.
-Base EVERY question strictly on the retrieved passages above.
+Rules for the shapes:
+- mcq: provide exactly 4 "options" (A–D) and set "answer" to the correct letter.
+- true_false: set "options" to null and "answer" to "True" or "False".
+- short_answer / cloze: set "options" to null and "answer" to the expected text.
+
+Generate exactly {n} questions, honouring the assigned qtypes above and varying
+Bloom levels and difficulties. Base EVERY question strictly on the retrieved
+passages above.
 """
 
 
@@ -213,6 +333,7 @@ def _generate_questions_single_chunk(
     total_chunks = sum(ch.total_chunks for ch in chapters)
     processed = 0
     failed_chunks = 0
+    qtype_cursor = 0  # rotates qtype assignment across chunks for balance
 
     for chapter in chapters:
         for chunk in chapter.chunks:
@@ -226,8 +347,9 @@ def _generate_questions_single_chunk(
             )
 
             questions = _generate_from_chunk(
-                chunk, per_chunk, client, max_retries
+                chunk, per_chunk, client, max_retries, qtype_offset=qtype_cursor
             )
+            qtype_cursor = (qtype_cursor + per_chunk) % len(QTYPE_ROTATION)
             if questions:
                 all_questions.extend(questions)
                 logger.info(
@@ -256,14 +378,17 @@ def _generate_from_chunk(
     n: int,
     client: LLMClient,
     max_retries: int,
+    qtype_offset: int = 0,
 ) -> list[Question]:
     """Call the LLM for a single chunk and return validated Questions."""
+    type_spec = _format_type_spec(_assign_qtypes(n, qtype_offset))
     user_msg = USER_PROMPT_TEMPLATE.format(
         n=n,
         chunk_id=chunk.chunk_id,
         chapter_num=chunk.chapter_num,
         section_label=chunk.section_label or "N/A",
         text=chunk.text[:3000],  # cap to avoid token overflow
+        type_spec=type_spec,
     )
 
     messages = [
@@ -344,6 +469,7 @@ def _generate_questions_rag(
     # Group chunks by chapter/section
     targets = _build_chapter_section_targets(chapters)
     total_targets = len(targets)
+    qtype_cursor = 0  # rotates qtype assignment across targets for balance
 
     for idx, (chapter_num, section_label, target_chunks) in enumerate(targets, 1):
         logger.info(
@@ -379,7 +505,9 @@ def _generate_questions_rag(
             per_chunk,
             client,
             max_retries,
+            qtype_offset=qtype_cursor,
         )
+        qtype_cursor = (qtype_cursor + per_chunk) % len(QTYPE_ROTATION)
 
         if questions:
             # Run grounding check if enabled
@@ -445,6 +573,7 @@ def _generate_from_retrieved_chunks(
     n: int,
     client: LLMClient,
     max_retries: int,
+    qtype_offset: int = 0,
 ) -> list[Question]:
     """Call the LLM with retrieved chunks as grounding context."""
     from quizgen.index import RetrievedChunk
@@ -457,11 +586,13 @@ def _generate_from_retrieved_chunks(
         )
     context = "\n\n".join(context_parts)
 
+    type_spec = _format_type_spec(_assign_qtypes(n, qtype_offset))
     user_msg = USER_PROMPT_TEMPLATE_RAG.format(
         n=n,
         chapter_num=chapter_num,
         section_label=section_label or "N/A",
         context=context,
+        type_spec=type_spec,
     )
 
     messages = [
