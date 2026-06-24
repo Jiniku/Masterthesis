@@ -1,0 +1,26 @@
+# Example Automated Test Assembly blueprint.
+#
+# Run:  python -m quizgen.assemble --pool questions.example.json \
+#                                  --blueprint blueprint.yaml --out-dir out
+#
+# Each section below is an OPTIONAL exact-count quota. The counts within a
+# section must not exceed total_questions. Omit a section to leave that
+# dimension unconstrained.
+
+title: "AI-1 Practice Exam"
+total_questions: 8
+forms: 1            # number of non-overlapping exam versions to assemble
+seed: 42            # makes selection reproducible
+
+# Even mix across the four question formats.
+qtypes:
+  mcq: 2
+  true_false: 2
+  short_answer: 2
+  cloze: 2
+
+# Difficulty spread (sums to 8).
+difficulty:
+  easy: 3
+  medium: 3
+  hard: 2

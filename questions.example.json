@@ -1,0 +1,233 @@
+{
+  "title": "Example Question Pool",
+  "questions": [
+    {
+      "id": "cf279fd26ac4",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "[mcq] Sample question 1 grounded in chapter 2 content.",
+      "options": [
+        "A) First option",
+        "B) Second option",
+        "C) Third option",
+        "D) Fourth option"
+      ],
+      "answer": "B",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch2_s1_chunk_000"
+    },
+    {
+      "id": "7a162d1ef6c8",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "[mcq] Sample question 2 grounded in chapter 3 content.",
+      "options": [
+        "A) First option",
+        "B) Second option",
+        "C) Third option",
+        "D) Fourth option"
+      ],
+      "answer": "B",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch3_s2_chunk_001"
+    },
+    {
+      "id": "612e364099c5",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "easy",
+      "stem": "[mcq] Sample question 3 grounded in chapter 2 content.",
+      "options": [
+        "A) First option",
+        "B) Second option",
+        "C) Third option",
+        "D) Fourth option"
+      ],
+      "answer": "B",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch2_s3_chunk_002"
+    },
+    {
+      "id": "7efc70e97296",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "[mcq] Sample question 4 grounded in chapter 3 content.",
+      "options": [
+        "A) First option",
+        "B) Second option",
+        "C) Third option",
+        "D) Fourth option"
+      ],
+      "answer": "B",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch3_s4_chunk_003"
+    },
+    {
+      "id": "42e58e4a1197",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "true_false",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "[true_false] Sample question 5 grounded in chapter 2 content.",
+      "options": null,
+      "answer": "True",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch2_s1_chunk_004"
+    },
+    {
+      "id": "cb3e0171fc5f",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "[true_false] Sample question 6 grounded in chapter 3 content.",
+      "options": null,
+      "answer": "True",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch3_s2_chunk_005"
+    },
+    {
+      "id": "d65574c9d304",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "true_false",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "[true_false] Sample question 7 grounded in chapter 2 content.",
+      "options": null,
+      "answer": "True",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch2_s3_chunk_006"
+    },
+    {
+      "id": "22a695575243",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "true_false",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "[true_false] Sample question 8 grounded in chapter 3 content.",
+      "options": null,
+      "answer": "True",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch3_s4_chunk_007"
+    },
+    {
+      "id": "4159aee44f8f",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "short_answer",
+      "bloom_level": "remember",
+      "difficulty": "medium",
+      "stem": "[short_answer] Sample question 9 grounded in chapter 2 content.",
+      "options": null,
+      "answer": "A concise expected answer about the topic.",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch2_s1_chunk_008"
+    },
+    {
+      "id": "a92ba8adbb4b",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "short_answer",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "[short_answer] Sample question 10 grounded in chapter 3 content.",
+      "options": null,
+      "answer": "A concise expected answer about the topic.",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch3_s2_chunk_009"
+    },
+    {
+      "id": "a2abd87f87fd",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "[short_answer] Sample question 11 grounded in chapter 2 content.",
+      "options": null,
+      "answer": "A concise expected answer about the topic.",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch2_s3_chunk_010"
+    },
+    {
+      "id": "50d72280c780",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "short_answer",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "[short_answer] Sample question 12 grounded in chapter 3 content.",
+      "options": null,
+      "answer": "A concise expected answer about the topic.",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch3_s4_chunk_011"
+    },
+    {
+      "id": "213cf04aef99",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "hard",
+      "stem": "[cloze] Sample question 13 grounded in chapter 2 content.",
+      "options": null,
+      "answer": "missing term",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch2_s1_chunk_012"
+    },
+    {
+      "id": "bc2fd439d214",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "cloze",
+      "bloom_level": "understand",
+      "difficulty": "hard",
+      "stem": "[cloze] Sample question 14 grounded in chapter 3 content.",
+      "options": null,
+      "answer": "missing term",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch3_s2_chunk_013"
+    },
+    {
+      "id": "5aee43417d4a",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "cloze",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "[cloze] Sample question 15 grounded in chapter 2 content.",
+      "options": null,
+      "answer": "missing term",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch2_s3_chunk_014"
+    },
+    {
+      "id": "fbce09bcf0df",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "cloze",
+      "bloom_level": "analyze",
+      "difficulty": "hard",
+      "stem": "[cloze] Sample question 16 grounded in chapter 3 content.",
+      "options": null,
+      "answer": "missing term",
+      "explanation": "This is the rationale for the correct answer, at least ten chars.",
+      "source_ref": "ch3_s4_chunk_015"
+    }
+  ]
+}
