@@ -1,0 +1,209 @@
+{
+  "$defs": {
+    "BloomLevel": {
+      "description": "Bloom's taxonomy cognitive levels (revised, 2001).",
+      "enum": [
+        "remember",
+        "understand",
+        "apply",
+        "analyze",
+        "evaluate",
+        "create"
+      ],
+      "title": "BloomLevel",
+      "type": "string"
+    },
+    "Difficulty": {
+      "description": "Three-tier difficulty scale.",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "Question": {
+      "description": "A single exam / quiz question with full metadata.\n\n``source_ref`` traces the question back to the text chunk(s) that\ngrounded its generation \u2014 essential for the RAG audit trail.",
+      "examples": [
+        {
+          "answer": "B",
+          "bloom_level": "understand",
+          "chapter": 2,
+          "difficulty": "medium",
+          "explanation": "Hash tables use a hash function to map keys to buckets, giving O(1) average-case lookup time.",
+          "id": "a1b2c3d4e5f6",
+          "options": [
+            "Linked list",
+            "Hash table",
+            "Binary tree",
+            "Stack"
+          ],
+          "qtype": "mcq",
+          "section": "2.1",
+          "source_ref": "ch2_s1_chunk_003",
+          "stem": "Which data structure provides O(1) average-case lookup?"
+        }
+      ],
+      "properties": {
+        "id": {
+          "description": "Unique question identifier.",
+          "title": "Id",
+          "type": "string"
+        },
+        "chapter": {
+          "description": "Chapter number the question belongs to.",
+          "minimum": 1,
+          "title": "Chapter",
+          "type": "integer"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Section label within the chapter (e.g. '2.3').",
+          "title": "Section"
+        },
+        "qtype": {
+          "$ref": "#/$defs/QuestionType",
+          "description": "Question format."
+        },
+        "bloom_level": {
+          "$ref": "#/$defs/BloomLevel",
+          "description": "Bloom's taxonomy cognitive level."
+        },
+        "difficulty": {
+          "$ref": "#/$defs/Difficulty",
+          "description": "Difficulty tier."
+        },
+        "stem": {
+          "description": "The question text / prompt shown to the student.",
+          "minLength": 10,
+          "title": "Stem",
+          "type": "string"
+        },
+        "options": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Answer options (required for MCQ, optional otherwise).",
+          "title": "Options"
+        },
+        "answer": {
+          "description": "The correct answer (letter for MCQ, text otherwise).",
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        },
+        "explanation": {
+          "description": "Explanation of why the answer is correct, for review.",
+          "minLength": 10,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "source_ref": {
+          "description": "Identifier(s) of the source chunk(s) this question is grounded in.",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "chapter",
+        "qtype",
+        "bloom_level",
+        "difficulty",
+        "stem",
+        "answer",
+        "explanation",
+        "source_ref"
+      ],
+      "title": "Question",
+      "type": "object"
+    },
+    "QuestionType": {
+      "description": "Supported question formats.",
+      "enum": [
+        "mcq",
+        "true_false",
+        "short_answer",
+        "cloze"
+      ],
+      "title": "QuestionType",
+      "type": "string"
+    }
+  },
+  "description": "A complete quiz / exam consisting of selected questions.\n\n``blueprint`` stores the professor's constraints that drove the\nAutomated Test Assembly selection so the exam is fully reproducible.",
+  "examples": [
+    {
+      "blueprint": {
+        "chapters": {
+          "1": 10,
+          "2": 6,
+          "3": 4
+        },
+        "difficulty_mix": {
+          "easy": 0.4,
+          "hard": 0.2,
+          "medium": 0.4
+        },
+        "total_questions": 20
+      },
+      "created_at": "2025-07-01T10:00:00Z",
+      "questions": [],
+      "quiz_id": "exam_2025_v1",
+      "title": "AI-1 Midterm Exam \u2014 Version A"
+    }
+  ],
+  "properties": {
+    "quiz_id": {
+      "description": "Unique quiz identifier.",
+      "title": "Quiz Id",
+      "type": "string"
+    },
+    "title": {
+      "description": "Human-readable title for the quiz/exam.",
+      "title": "Title",
+      "type": "string"
+    },
+    "created_at": {
+      "description": "UTC timestamp of creation.",
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "blueprint": {
+      "additionalProperties": true,
+      "description": "The blueprint / constraints used to assemble this quiz.",
+      "title": "Blueprint",
+      "type": "object"
+    },
+    "questions": {
+      "description": "Ordered list of questions in this quiz.",
+      "items": {
+        "$ref": "#/$defs/Question"
+      },
+      "title": "Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "title": "Quiz",
+  "type": "object"
+}

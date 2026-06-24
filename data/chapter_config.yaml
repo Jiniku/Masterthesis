@@ -1,0 +1,30 @@
+# Chapter configuration for the AI-1 textbook.
+# The ingestion pipeline uses the PDF's built-in TOC by default.
+# Use this file to override chapter boundaries or filter which chapters to process.
+
+# Chapters to process (by number). The TOC is used for page ranges automatically.
+# Uncomment and edit to restrict or override:
+#
+# chapters:
+#   1:
+#     title: "Preliminaries"
+#     # pages: [12, 31]          # override page range (1-indexed, inclusive)
+#   2:
+#     title: "AI – Who?, What?, When?, Where?, and Why?"
+#   3:
+#     title: "Logic Programming"
+
+# Heading patterns (regex) for fallback section detection if TOC is missing.
+# The defaults below match the textbook's LaTeX-generated headings.
+heading_patterns:
+  chapter: "^(\\d+)\\s+(.+)$"
+  section: "^(\\d+\\.\\d+)\\s+(.+)$"
+  subsection: "^(\\d+\\.\\d+\\.\\d+)\\s+(.+)$"
+
+# Chunking parameters
+chunking:
+  target_tokens: 600          # target chunk size in tokens
+  max_tokens: 800             # hard upper limit
+  min_tokens: 100             # discard chunks smaller than this
+  overlap_tokens: 100         # overlap between consecutive chunks
+  tokenizer: "cl100k_base"   # tiktoken encoding (GPT-4 / OpenAI compatible)

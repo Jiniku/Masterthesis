@@ -1,0 +1,148 @@
+{
+  "$defs": {
+    "BloomLevel": {
+      "description": "Bloom's taxonomy cognitive levels (revised, 2001).",
+      "enum": [
+        "remember",
+        "understand",
+        "apply",
+        "analyze",
+        "evaluate",
+        "create"
+      ],
+      "title": "BloomLevel",
+      "type": "string"
+    },
+    "Difficulty": {
+      "description": "Three-tier difficulty scale.",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "QuestionType": {
+      "description": "Supported question formats.",
+      "enum": [
+        "mcq",
+        "true_false",
+        "short_answer",
+        "cloze"
+      ],
+      "title": "QuestionType",
+      "type": "string"
+    }
+  },
+  "description": "A single exam / quiz question with full metadata.\n\n``source_ref`` traces the question back to the text chunk(s) that\ngrounded its generation \u2014 essential for the RAG audit trail.",
+  "examples": [
+    {
+      "answer": "B",
+      "bloom_level": "understand",
+      "chapter": 2,
+      "difficulty": "medium",
+      "explanation": "Hash tables use a hash function to map keys to buckets, giving O(1) average-case lookup time.",
+      "id": "a1b2c3d4e5f6",
+      "options": [
+        "Linked list",
+        "Hash table",
+        "Binary tree",
+        "Stack"
+      ],
+      "qtype": "mcq",
+      "section": "2.1",
+      "source_ref": "ch2_s1_chunk_003",
+      "stem": "Which data structure provides O(1) average-case lookup?"
+    }
+  ],
+  "properties": {
+    "id": {
+      "description": "Unique question identifier.",
+      "title": "Id",
+      "type": "string"
+    },
+    "chapter": {
+      "description": "Chapter number the question belongs to.",
+      "minimum": 1,
+      "title": "Chapter",
+      "type": "integer"
+    },
+    "section": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Section label within the chapter (e.g. '2.3').",
+      "title": "Section"
+    },
+    "qtype": {
+      "$ref": "#/$defs/QuestionType",
+      "description": "Question format."
+    },
+    "bloom_level": {
+      "$ref": "#/$defs/BloomLevel",
+      "description": "Bloom's taxonomy cognitive level."
+    },
+    "difficulty": {
+      "$ref": "#/$defs/Difficulty",
+      "description": "Difficulty tier."
+    },
+    "stem": {
+      "description": "The question text / prompt shown to the student.",
+      "minLength": 10,
+      "title": "Stem",
+      "type": "string"
+    },
+    "options": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Answer options (required for MCQ, optional otherwise).",
+      "title": "Options"
+    },
+    "answer": {
+      "description": "The correct answer (letter for MCQ, text otherwise).",
+      "minLength": 1,
+      "title": "Answer",
+      "type": "string"
+    },
+    "explanation": {
+      "description": "Explanation of why the answer is correct, for review.",
+      "minLength": 10,
+      "title": "Explanation",
+      "type": "string"
+    },
+    "source_ref": {
+      "description": "Identifier(s) of the source chunk(s) this question is grounded in.",
+      "title": "Source Ref",
+      "type": "string"
+    }
+  },
+  "required": [
+    "chapter",
+    "qtype",
+    "bloom_level",
+    "difficulty",
+    "stem",
+    "answer",
+    "explanation",
+    "source_ref"
+  ],
+  "title": "Question",
+  "type": "object"
+}
