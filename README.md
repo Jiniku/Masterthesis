@@ -1,64 +1,125 @@
-# quizgen — Automated Test Assembly from a Question Bank
+# quizgen — build an exam from a question bank
 
 Master's thesis project — KWARC group, FAU Erlangen-Nürnberg
 
-`quizgen` takes an existing **question bank** (a JSON list of questions with
-metadata) and **selects** a blueprint-compliant exam from it — the right number
-of questions per chapter, the target difficulty mix, allowed question types, and
-one or more **parallel, non-overlapping versions**. Selection is solved exactly
-with **Automated Test Assembly** (a greedy selector or a Mixed-Integer Program),
-not coaxed from a prompt.
+## What this tool does (in one sentence)
 
-> There is **no LLM and no PDF ingestion** here. You bring the questions;
-> quizgen picks the exam. Constraints come from a blueprint YAML and/or
-> command-line flags (**flags override the YAML**).
+You already have a **collection of exam questions** (in a JSON file). You tell
+quizgen **what the exam should look like** — how many questions, how many per
+chapter, how hard, how many versions — and it **picks the questions for you**,
+exactly matching your specification.
+
+That's it. It does **not** write questions and it does **not** read a textbook.
+It only *selects* from questions you already have. No AI / LLM is involved.
+
+**A small example.** You have 180 questions. You want a 20-question exam: half
+from Chapter 1, and an easy/medium/hard mix of 8/8/4 — in **two different
+versions** that share no questions (so students next to each other get
+different papers). quizgen does the picking and guarantees the counts are
+exactly right.
+
+Three words used throughout this README:
+
+- **Pool** = your question bank (the input JSON file).
+- **Blueprint** = your specification of the exam (counts, difficulty, versions).
+- **Version** = one assembled exam paper. You can ask for several at once.
 
 ---
 
-## Install
+## 1. Set up (do this once)
+
+You need **Python 3.11 or newer**.
+
+> **macOS / Linux note:** on a Mac the command is `python3`, not `python`.
+> After you create and *activate* the virtual environment below, `python`
+> works inside it. If you ever see `zsh: command not found: python`, it just
+> means the environment is not activated — run the `source` line again.
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e .            # core: pydantic, pyyaml, pulp
-pip install -e ".[dev]"     # + pytest, ruff   (for tests)
-pip install -e ".[embeddings]"   # optional: semantic dedup (sentence-transformers)
+# from inside the project folder:
+python3 -m venv .venv            # create a private environment (once)
+source .venv/bin/activate        # activate it — your prompt now shows (.venv)
+pip install -e .                 # install quizgen + its 3 dependencies
 ```
 
-Requires Python 3.11+.
+On **Windows (PowerShell)**:
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e .
+```
+
+That installs only three small libraries: `pydantic`, `pyyaml`, `pulp`
+(the optimisation solver). No AI models, no internet needed.
+
+Optional extras:
+
+```bash
+pip install -e ".[dev]"          # tools to run the tests (pytest, ruff)
+pip install -e ".[embeddings]"   # smarter duplicate detection (optional)
+```
 
 ---
 
-## Quick start
+## 2. Run your first exam (3 steps)
+
+Make sure the environment is active (you see `(.venv)` in your prompt). Then:
 
 ```bash
-# Pick 20 questions from the example bank using the example blueprint,
-# de-duplicate first, and write a validation report per version:
+python -m quizgen --pool questions.example.json --blueprint blueprint.yaml --out-dir out
+```
+
+- `--pool questions.example.json` → the question bank to pick from (an example
+  with 180 questions is included).
+- `--blueprint blueprint.yaml` → the exam specification (an example is included).
+- `--out-dir out` → put the finished exams in a folder called `out/`.
+
+You will see output like this:
+
+```
+📋 Blueprint: AI-1 Midterm Exam
+   Total/version: 20
+   Per chapter:   {1: 10, 2: 6, 3: 4}
+   Difficulty:    {'easy': 8, 'medium': 8, 'hard': 4}
+   Versions:      2   Selector: mip
+   Pool size:     180
+
+   ── Version A (20 questions) ──
+      Per chapter: {1: 10, 2: 6, 3: 4}
+      Difficulty:  {'easy': 8, 'medium': 8, 'hard': 4}
+   💾 Saved version A -> out/exam_v1.json
+
+   ── Version B (20 questions) ──
+      Per chapter: {1: 10, 2: 6, 3: 4}
+      Difficulty:  {'easy': 8, 'medium': 8, 'hard': 4}
+   💾 Saved version B -> out/exam_v2.json
+
+✅ All versions blueprint-compliant
+```
+
+Look in the `out/` folder: `exam_v1.json` and `exam_v2.json` are your two
+finished exams (each a list of the chosen questions).
+
+**Add a quality report** by also passing `--validate`:
+
+```bash
 python -m quizgen --pool questions.example.json --blueprint blueprint.yaml \
-    --dedup --validate --out-dir out
+    --validate --out-dir out
 ```
 
-This reads `questions.example.json` (72 sample questions), assembles two
-disjoint 20-question versions matching `blueprint.yaml`, and writes
-`out/exam_v1.json`, `out/exam_v2.json` and their `.report.md` files.
-
-Pure command line, no YAML at all:
-
-```bash
-python -m quizgen --pool questions.example.json \
-    --total 20 --chapters 1:10,2:6,3:4 \
-    --difficulty 0.4,0.4,0.2 --versions 2 --selector mip
-```
+This writes an extra `exam_v1.report.md` / `exam_v2.report.md` next to each
+exam, confirming it matches the blueprint, has no duplicates, etc.
 
 ---
 
-## The question bank (input)
+## 3. The input file (your question bank)
 
-A JSON file: either a `Quiz` object with a `questions` array, or a bare list of
-questions. Each question follows the `Question` schema (`schemas/question.schema.json`):
+A JSON file containing a list of questions. Each question needs these fields
+(the exact rules are in `schemas/question.schema.json`):
 
 ```json
 {
-  "id": "q001",
   "chapter": 1,
   "section": "1.2",
   "qtype": "mcq",
@@ -72,152 +133,148 @@ questions. Each question follows the `Question` schema (`schemas/question.schema
 }
 ```
 
-The metadata fields are what selection reasons over:
+quizgen uses the **metadata** to decide what to pick:
 
-| Field | Used for |
-|-------|----------|
-| `chapter` | per-chapter quotas |
-| `difficulty` | `easy` / `medium` / `hard` mix |
-| `qtype` | `mcq` / `true_false` / `short_answer` / `cloze` filtering |
-| `bloom_level` | `remember … create` (informs the quality objective) |
-| `stem` / `answer` / `options` | near-duplicate detection |
-| `source_ref` | provenance / audit trail (free-form; optional in practice) |
+| Field | Why quizgen needs it |
+|-------|----------------------|
+| `chapter` | to hit the per-chapter counts |
+| `difficulty` | `easy` / `medium` / `hard` — to hit the difficulty mix |
+| `qtype` | `mcq` / `true_false` / `short_answer` / `cloze` — for type filtering |
+| `bloom_level` | `remember … create` — slightly favours higher-order questions |
+| `stem`, `answer`, `options` | to detect near-duplicate questions |
+| `source_ref` | a free-text note of where the question came from |
+
+To use **your own** questions, make a file in this same shape and pass it with
+`--pool your_questions.json`. (The included `questions.example.json` is just a
+sample so the tool works out of the box.)
 
 ---
 
-## The blueprint
+## 4. The blueprint (your exam specification)
 
-A small YAML the professor edits (see `blueprint.yaml`):
+A short YAML file you edit (`blueprint.yaml`):
 
 ```yaml
 title: "AI-1 Midterm Exam"
 total_questions: 20
-chapters: { 1: "50%", 2: "30%", 3: "20%" }   # counts, fractions, or "NN%"
+chapters: { 1: "50%", 2: "30%", 3: "20%" }      # how to split across chapters
 difficulty_mix: { easy: 0.4, medium: 0.4, hard: 0.2 }
 allowed_qtypes: [mcq, true_false, short_answer, cloze]
-versions: 2
-selector: mip            # greedy | mip
-dedup_similarity: 0.85
+versions: 2                # how many parallel papers
+selector: mip              # "mip" (exact) or "greedy" (fast) — see below
+dedup_similarity: 0.85     # how similar counts as a "duplicate" (0–1)
 ```
 
-Chapter and difficulty amounts may be integer counts, fractions, or `"NN%"`
-strings; they are resolved to exact integer counts (largest-remainder method)
-that sum to `total_questions`.
+- Chapter and difficulty amounts can be **exact counts** (`10`), **fractions**
+  (`0.5`), or **percentages** (`"50%"`). quizgen converts them to whole numbers
+  that add up to `total_questions` exactly.
+- `versions: 2` produces two papers that **share no questions**.
 
 ---
 
-## Constraints: YAML and/or flags (flags win)
+## 5. Setting the exam without editing the file (command-line flags)
 
-Every blueprint field can be overridden on the command line, so you can keep a
-base `blueprint.yaml` and tweak a single run:
+You don't have to edit the YAML every time. Any setting can be given as a
+**flag on the command line**, and **flags override the YAML file**. You can even
+skip the blueprint file entirely:
 
 ```bash
-# Load the YAML, but override just the version count and selector:
-python -m quizgen --pool questions.example.json --blueprint blueprint.yaml \
-    --versions 3 --selector greedy
+# No YAML at all — specify everything on the command line:
+python -m quizgen --pool questions.example.json \
+    --total 20 --chapters 1:10,2:6,3:4 \
+    --difficulty 0.4,0.4,0.2 --versions 2 --selector mip
 ```
 
-| Flag | Overrides | Example |
-|------|-----------|---------|
-| `--pool` | (required) question-bank JSON | `--pool questions.json` |
-| `--blueprint` | blueprint YAML (defaults) | `--blueprint blueprint.yaml` |
-| `--total` | `total_questions` | `--total 20` |
-| `--chapters` | `chapters` | `--chapters 1:10,2:6,3:4` or `1:50%,2:30%,3:20%` |
-| `--difficulty` | `difficulty_mix` | `--difficulty 0.4,0.4,0.2` or `easy:0.4,hard:0.6` |
-| `--qtypes` | `allowed_qtypes` | `--qtypes mcq,short_answer` |
-| `--versions` | `versions` | `--versions 2` |
-| `--selector` | `selector` | `--selector mip` |
-| `--dedup-similarity` | `dedup_similarity` | `--dedup-similarity 0.9` |
-| `--dedup` | drop near-duplicates from the pool first | |
-| `--embeddings` | use embeddings for `--dedup` (else token overlap) | |
-| `--validate` | write a Markdown validation report per version | |
-| `--out` / `--out-dir` | output path(s) | `--out-dir out` |
+| Flag | Sets | Example |
+|------|------|---------|
+| `--pool` | the question bank (**required**) | `--pool questions.example.json` |
+| `--blueprint` | a YAML file of defaults | `--blueprint blueprint.yaml` |
+| `--total` | total questions per version | `--total 20` |
+| `--chapters` | per-chapter split | `--chapters 1:10,2:6,3:4` or `1:50%,2:30%,3:20%` |
+| `--difficulty` | easy/medium/hard mix | `--difficulty 0.4,0.4,0.2` |
+| `--qtypes` | allowed question types | `--qtypes mcq,short_answer` |
+| `--versions` | number of papers | `--versions 2` |
+| `--selector` | `greedy` or `mip` | `--selector mip` |
+| `--dedup` | remove duplicate questions first | *(on/off)* |
+| `--validate` | also write a quality report | *(on/off)* |
+| `--out` / `--out-dir` | where to save | `--out-dir out` |
 
-If neither the YAML nor `--total` provides a question count, the run errors out.
+If you give neither `--total` nor a blueprint with a total, quizgen stops and
+tells you a total is required.
 
 ---
 
-## The two selectors
+## 6. How it picks: `greedy` vs `mip`
 
-| Selector | Method | Guarantees |
-|----------|--------|-----------|
-| `greedy` | Greedy/random with content balancing | Fast; meets per-chapter counts, respects the difficulty marginal, skips duplicates |
-| `mip` | Mixed-Integer Program (PuLP/CBC) | Meets per-chapter **and** difficulty counts exactly, maximises a quality objective, keeps versions disjoint, forbids near-duplicate pairs across versions |
+| `selector` | What it is | When to use |
+|-----------|------------|-------------|
+| `greedy` | A fast, simple "fill the quotas" method | quick drafts; very large pools |
+| `mip` | An **exact optimiser** (Mixed-Integer Program, solved by PuLP/CBC) | the real exam — guarantees the counts are exactly right, versions don't overlap, and no duplicates appear |
 
-The MIP is a 0–1 program: a binary `x[i,v]` decides whether question `i` goes
-into version `v`, subject to exact per-chapter and per-difficulty equalities,
-at-most-one-version-per-question (disjointness), and a forbid-near-duplicate
-constraint, maximising total question quality. If the exact program is
-infeasible for the given pool, the difficulty equalities are relaxed (and the
-relaxation is reported) while per-chapter counts are never violated.
-
----
-
-## What the pipeline does
-
-```
-question bank (JSON)
-        │
-        ├─►  (optional) deduplicate the pool        quizgen/dedup.py, similarity.py
-        │
-        ├─►  assemble  (greedy | MIP)               quizgen/assemble.py, blueprint.py
-        │      → one or more disjoint versions
-        │
-        └─►  (optional) validate each version        quizgen/validate.py
-               → schema, blueprint compliance,
-                 grounding, duplicate rate
-```
+**Recommended: `mip`.** It treats the selection as a math problem and finds a
+solution that meets *every* constraint exactly while preferring higher-quality
+questions. If your pool is too small to satisfy everything (e.g. not enough
+hard questions in a chapter), it relaxes the difficulty target, tells you it did
+so, and still keeps the per-chapter counts correct.
 
 ---
 
-## Project structure
+## 7. Troubleshooting
+
+**`zsh: command not found: python`**
+The virtual environment isn't active. Run `source .venv/bin/activate` (you
+should then see `(.venv)` in your prompt), and use `python` again. Outside the
+environment, use `python3`.
+
+**`MIP assembly failed: Infeasible` / "pool too small"**
+Your question bank doesn't have enough questions to satisfy the blueprint
+(e.g. you asked for 2 versions × 10 Chapter-1 questions = 20, but the pool only
+has 12 from Chapter 1). Add more questions, ask for fewer, or reduce `versions`.
+
+**`total number of questions is required`**
+Pass `--total N`, or put `total_questions:` in your blueprint YAML.
+
+---
+
+## 8. Other commands
+
+```bash
+# Run the test suite (needs the [dev] extra installed):
+pytest
+
+# The assemble and validate steps as standalone tools:
+python -m quizgen.assemble --pool questions.example.json --blueprint blueprint.yaml --out exam.json
+python -m quizgen.validate --exam exam.json --blueprint blueprint.yaml --out report.md
+```
+
+Everything runs offline — no internet, no API keys, no AI models.
+
+---
+
+## Project layout
 
 ```
 quizgen/
 ├── quizgen/
-│   ├── __main__.py     # CLI: pool + blueprint/flags → exam version(s)
-│   ├── schema.py       # Pydantic models (Question, Quiz) + JSON-Schema export
-│   ├── blueprint.py    # Blueprint model, count resolution (largest-remainder)
-│   ├── assemble.py     # Automated Test Assembly: GreedySelector, MIPSelector
-│   ├── similarity.py   # Near-duplicate detection (token-Jaccard / embedding)
-│   ├── dedup.py        # Pool deduplication pass
-│   ├── validate.py     # Validation & quality report
-│   ├── textmatch.py    # Dependency-free content-word overlap helper
-│   └── config.py       # Optional embedding-model setting (semantic dedup)
-├── blueprint.yaml          # Example blueprint
-├── questions.example.json  # Example question bank (72 questions)
-├── schemas/                # Exported JSON Schemas (Question, Quiz)
-└── tests/                  # test_schema, test_blueprint+assemble, test_dedup,
-                            # test_validate, test_cli
+│   ├── __main__.py     # the command you run: pool + blueprint/flags → exam(s)
+│   ├── schema.py       # the Question / Quiz data definitions
+│   ├── blueprint.py    # reads the blueprint, turns %/fractions into exact counts
+│   ├── assemble.py     # the selection logic (greedy + MIP)
+│   ├── similarity.py   # finds near-duplicate questions
+│   ├── dedup.py        # removes duplicates from the pool
+│   ├── validate.py     # checks a finished exam against the blueprint
+│   ├── textmatch.py    # small text helper
+│   └── config.py       # one optional setting (embedding model)
+├── blueprint.yaml          # example exam specification
+├── questions.example.json  # example question bank
+├── schemas/                # the JSON rules for a Question / Quiz
+├── docs/                   # implementation report (LaTeX) + slides
+└── tests/                  # automated tests
 ```
-
----
-
-## Standalone tools
-
-The assembly and validation steps also have their own entry points:
-
-```bash
-# Assemble from a blueprint file only:
-python -m quizgen.assemble --pool questions.example.json --blueprint blueprint.yaml --out exam.json
-
-# Validate an assembled exam against a blueprint:
-python -m quizgen.validate --exam exam.json --blueprint blueprint.yaml --out report.md
-```
-
----
-
-## Tests
-
-```bash
-source .venv/bin/activate
-pytest
-```
-
-Everything runs offline with no external services.
 
 ---
 
 ## License
 
-MIT License — Author: Jinikuhayashi — Advisor: Prof. Michael Kohlhase (KWARC, FAU Erlangen-Nürnberg)
+MIT License — Author: Jinikuhayashi — Advisor: Prof. Michael Kohlhase
+(KWARC, FAU Erlangen-Nürnberg)
