@@ -23,6 +23,7 @@ from quizgen.llm_client import LLMClient
 _SPEC_RE = re.compile(
     r"#SPEC\s+\d+\s*\|\s*bloom=(\w+)\s*\|\s*difficulty=(\w+)\s*\|\s*qtype=(\w+)"
 )
+_JUDGE_RE = re.compile(r"#JUDGE\s+([a-zA-Z0-9_\-]+)\s*\|\s*bloom=(\w+)")
 _CHUNK_ID_RE = re.compile(r"\[([a-zA-Z0-9_.\-]+)\]")
 _N_RE = re.compile(r"[Gg]enerate exactly (\d+)")
 _CHAPTER_RE = re.compile(r"Chapter (\d+)")
@@ -72,6 +73,11 @@ class MockLLMClient(LLMClient):
             (m["content"] for m in reversed(messages) if m.get("role") == "user"),
             "",
         )
+
+        # Judge mode: echo plausible (high) ratings for each reviewed question.
+        if "JUDGE RUBRIC" in user:
+            return self._build_judge_payload(user)
+
         chapter = int(_CHAPTER_RE.search(user).group(1)) if _CHAPTER_RE.search(user) else 1
         sec_match = _SECTION_RE.search(user)
         section = sec_match.group(1) if sec_match else f"{chapter}.0"
@@ -124,6 +130,24 @@ class MockLLMClient(LLMClient):
                         tail = tail[:epos]
                 return tail
         return user
+
+    def _build_judge_payload(self, user: str) -> dict:
+        """Return deterministic ratings for every #JUDGE line in the prompt.
+
+        Scores are high (4–5) so nothing is flagged by default; a very short
+        stem earns a lower clarity score to exercise the flagging path.
+        """
+        ratings = []
+        for qid, bloom in _JUDGE_RE.findall(user):
+            ratings.append({
+                "id": qid,
+                "answerability": 5,
+                "correctness": 4,
+                "clarity": 5,
+                "bloom_match": 4,
+                "comment": f"Clear {bloom}-level question grounded in the passage.",
+            })
+        return {"ratings": ratings}
 
     def _keywords(self, text: str) -> list[str]:
         """Extract distinctive content words from the source passages."""

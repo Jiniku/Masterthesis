@@ -299,18 +299,7 @@ class ChunkIndex:
         return ratio >= min_overlap_ratio, ratio
 
 
-def _extract_content_words(text: str) -> set[str]:
-    """Extract meaningful words from text (lowercase, 3+ chars, no stopwords)."""
-    import re
-
-    stopwords = {
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "could",
-        "should", "may", "might", "can", "shall", "not", "and", "but", "or",
-        "if", "then", "else", "when", "where", "how", "what", "which", "who",
-        "that", "this", "these", "those", "with", "from", "for", "in", "on",
-        "at", "to", "of", "by", "as", "it", "its", "they", "them", "their",
-        "we", "our", "you", "your", "he", "she", "his", "her",
-    }
-    words = set(re.findall(r"\b[a-z]{3,}\b", text.lower()))
-    return words - stopwords
+# Re-exported for backward compatibility; the implementation now lives in the
+# dependency-free quizgen.textmatch module so other code can use it without
+# importing the heavy vector-index stack.
+from quizgen.textmatch import extract_content_words as _extract_content_words  # noqa: E402

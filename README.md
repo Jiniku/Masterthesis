@@ -144,28 +144,132 @@ python -m quizgen --chapters 2 --per-chunk 2 --out quizzes_rag.json --rag --show
 
 ---
 
+## 🧪 The Full Pipeline (Phases 3–5)
+
+The complete **generate-then-select** pipeline runs end to end with a single
+command:
+
+```
+ingest → index → generate pool → deduplicate → assemble → validate → judge
+```
+
+```bash
+source .venv/bin/activate
+
+# Full pipeline against the configured LLM (.env), driven by a blueprint:
+python -m quizgen.pipeline --chapters 1-3 --blueprint blueprint.yaml --judge
+
+# Same thing fully offline (no API / no network), using the deterministic
+# MockLLMClient — handy for demos, CI, and air-gapped machines:
+python -m quizgen.pipeline --chapters 1-3 --blueprint blueprint.yaml --mock --no-rag
+```
+
+Outputs land in `out/`: one `exam_vN.json` plus a `report_vN.md` per version.
+
+### Phase 3 — Bloom & difficulty control
+
+Generate a controlled set with an explicit cognitive-level and difficulty
+spread (Bloom-aligned prompting with per-level few-shot examples). The output
+is **guaranteed schema-valid JSON** (strict structured-output mode, with a
+loose-JSON fallback and an Outlines hook for local constrained decoding —
+selected by `STRUCTURED_OUTPUT_MODE` in `.env`):
+
+```bash
+# 12 questions for chapter 3 across all Bloom levels, 40/40/20 difficulty,
+# printing a Bloom × difficulty distribution table:
+python -m quizgen.generate --chapters 3 --controlled --total 12 \
+    --difficulty-mix "easy:0.4,medium:0.4,hard:0.2" --out quiz_ch3.json
+```
+
+> Schema validity guarantees the *container*, not the *facts* — the Pydantic
+> and grounding checks still run on every item.
+
+### Phase 4 — Blueprint & Automated Test Assembly
+
+The professor edits **`blueprint.yaml`** (total questions, per-chapter share as
+counts/fractions/percentages, difficulty mix, allowed types, parallel versions,
+selector). Generation produces a large tagged *pool*; the **selector** picks the
+subset that satisfies the blueprint:
+
+```bash
+# 1. Build a pool (reuse Phase 3 controlled generation)
+python -m quizgen.generate --chapters 1-3 --controlled --total 30 --out pool.json
+
+# 2. Assemble exam(s) from the pool per the blueprint
+python -m quizgen.assemble --blueprint blueprint.yaml --pool pool.json --out exam.json
+```
+
+Two interchangeable selectors (set `selector:` in the blueprint, or override
+with `--selector`):
+
+| Selector | Method | Guarantees |
+|----------|--------|-----------|
+| `greedy` | Greedy/random with content balancing | Fast; meets per-chapter counts, balances difficulty |
+| `mip` | Mixed-integer programming (PuLP/CBC) | Meets per-chapter **and** difficulty counts exactly, maximises a quality objective, keeps parallel versions disjoint, forbids near-duplicates |
+
+Each version is written as `Quiz` JSON embedding the resolved blueprint and the
+per-question chapter/Bloom/difficulty tags and `source_ref`.
+
+### Phase 5 — Validation, deduplication, evaluation
+
+```bash
+# Standalone validation report (Markdown + JSON) for an assembled exam:
+python -m quizgen.validate --exam exam.json --blueprint blueprint.yaml \
+    --out report.md --json-out report.json
+```
+
+The report covers **schema validity**, **blueprint compliance** (counts per
+chapter, difficulty mix), **grounding coverage** (share traceable to source
+text), and **duplicate rate**. Deduplication (`quizgen/dedup.py`) drops
+near-duplicate pool questions by embedding cosine similarity (token-Jaccard
+fallback offline) and reports how many were removed. The optional
+**LLM-as-judge** (`quizgen/judge.py`, enabled with `--judge`) rates each
+question on answerability, answer correctness, clarity and Bloom-level match,
+flagging weak items for human review — kept as a separate module from
+generation.
+
+---
+
 ## 🧩 Project Structure
 
 ```
 quizgen/
 ├── quizgen/
 │   ├── __init__.py
-│   ├── __main__.py          # CLI entry point
-│   ├── schema.py            # Pydantic models (Question, Quiz)
+│   ├── __main__.py          # CLI entry point (generation)
+│   ├── schema.py            # Pydantic models (Question, Quiz) + batch schema
 │   ├── config.py            # Settings loaded from .env
-│   ├── llm_client.py        # OpenAI-compatible LLM wrapper
-│   ├── ingest.py            # PDF → chapters → sections → chunks
-│   ├── generate.py          # LLM-based question generation
-│   └── index.py             # RAG vector index (ChromaDB)
+│   ├── llm_client.py        # OpenAI-compatible LLM wrapper (+ structured output)
+│   ├── mock_client.py       # Offline deterministic LLM stand-in (demos/CI)
+│   ├── ingest.py            # PDF/TeX/MD → chapters → sections → chunks
+│   ├── generate.py          # LLM question generation (+ Phase 3 controlled)
+│   ├── bloom.py             # Phase 3: Bloom descriptions, few-shot, planners
+│   ├── index.py             # RAG vector index (ChromaDB)
+│   ├── blueprint.py         # Phase 4: professor blueprint model + loader
+│   ├── assemble.py          # Phase 4: ATA selectors (greedy + MIP)
+│   ├── similarity.py        # Near-duplicate detection (token / embedding)
+│   ├── dedup.py             # Phase 5: pool deduplication
+│   ├── validate.py          # Phase 5: validation/quality report
+│   ├── judge.py             # Phase 5: LLM-as-judge evaluation
+│   ├── textmatch.py         # Dependency-free content-word overlap helper
+│   └── pipeline.py          # Phase 5: end-to-end orchestration + CLI
 ├── data/
 │   ├── textbook.pdf         # AI-1 textbook
 │   └── chapter_config.yaml  # Chapter parsing config
+├── blueprint.yaml           # Example exam blueprint (Phase 4)
 ├── schemas/
 │   ├── question.schema.json # JSON Schema for Question
 │   └── quiz.schema.json     # JSON Schema for Quiz
 ├── tests/
-│   ├── test_schema.py       # Phase 0 schema tests
-│   └── test_ingest.py       # Phase 1 ingestion tests
+│   ├── fixtures/tiny_textbook.md   # Hermetic e2e fixture
+│   ├── test_schema.py              # Phase 0: schema
+│   ├── test_ingest.py              # Phase 1: ingestion
+│   ├── test_generate_controlled.py # Phase 3: Bloom/difficulty control
+│   ├── test_assemble.py            # Phase 4: blueprint + selectors
+│   ├── test_dedup.py               # Phase 5: deduplication
+│   ├── test_validate.py            # Phase 5: validation report
+│   ├── test_judge.py               # Phase 5: LLM-as-judge
+│   └── test_pipeline.py            # Phase 5: end-to-end
 ├── .env.example             # Environment config template
 ├── pyproject.toml           # Project metadata & dependencies
 └── README.md                # This file
@@ -223,7 +327,29 @@ This model runs locally via `sentence-transformers`. No API needed.
 ```env
 DEFAULT_PER_CHUNK=2
 DEFAULT_TEMPERATURE=0.7
+
+# How schema-valid JSON is enforced (Phase 3):
+#   auto        – try strict json_schema, fall back to json_object (default)
+#   json_schema – provider-enforced strict structured output (GLM/OpenAI)
+#   json_object – loose JSON mode (Pydantic still validates the container)
+#   outlines    – local constrained decoding via the Outlines library
+STRUCTURED_OUTPUT_MODE=auto
 ```
+
+### **Switching models — change one config value**
+
+Every model call goes through `LLMClient`, a thin wrapper over the
+OpenAI-compatible `/v1/chat/completions` endpoint. **Switching providers is a
+`.env` edit, no code changes**: point `LLM_BASE_URL` / `LLM_API_KEY` /
+`LLM_MODEL` at GLM-5.2 (Z.ai), a local Ollama model, OpenAI, or any
+OpenAI-compatible server (vLLM, etc.) using the blocks above. For offline runs
+with no provider at all, pass `--mock` to any CLI to use the deterministic
+`MockLLMClient`.
+
+> **Thesis note:** GLM-5.2 is MIT-licensed with open weights and native
+> structured output, but full-precision self-hosting needs ~1.5 TB of GPU
+> memory (use the hosted API or a quantized GGUF build), and the hosted API
+> routes data through China — relevant for data-protection considerations.
 
 ---
 
@@ -355,9 +481,18 @@ source .venv/bin/activate
 pytest
 ```
 
-**Test coverage:**
+**Test coverage (72 tests):**
 - `tests/test_schema.py` — Phase 0: Schema validation
 - `tests/test_ingest.py` — Phase 1: Ingestion pipeline
+- `tests/test_generate_controlled.py` — Phase 3: Bloom/difficulty control
+- `tests/test_assemble.py` — Phase 4: Blueprint + selectors
+- `tests/test_dedup.py` — Phase 5: Deduplication
+- `tests/test_validate.py` — Phase 5: Validation report
+- `tests/test_judge.py` — Phase 5: LLM-as-judge
+- `tests/test_pipeline.py` — Phase 5: End-to-end (hermetic)
+
+Most tests run fully offline via the `MockLLMClient`; no API key or network is
+required.
 
 ---
 
@@ -382,23 +517,23 @@ pytest
 - Grounding validation
 - `--rag` and `--no-rag` flags
 
-### **Phase 3 — Difficulty + Bloom Control** 🚧 TODO
-- Bloom-aligned prompting (few-shot examples)
-- Difficulty spread control (40% easy / 40% medium / 20% hard)
-- Constrained decoding (Outlines/XGrammar)
-- Schema-validity guarantees
+### **Phase 3 — Difficulty + Bloom Control** ✅ COMPLETE
+- Bloom-aligned prompting (per-level few-shot examples)
+- Difficulty spread control (e.g. 40% easy / 40% medium / 20% hard)
+- Guaranteed-valid JSON (strict structured output + Outlines hook)
+- Controlled generation CLI + Bloom × difficulty distribution table
 
-### **Phase 4 — Automated Test Assembly** 🚧 TODO
-- Blueprint YAML config
-- Greedy/random selector
-- Mixed-integer programming optimizer (PuLP)
-- Parallel exam version generation
+### **Phase 4 — Automated Test Assembly** ✅ COMPLETE
+- Blueprint YAML config (counts / fractions / percentages)
+- Greedy/random selector with content balancing
+- Mixed-integer programming optimizer (PuLP/CBC)
+- Parallel, disjoint exam version generation
 
-### **Phase 5 — Validation & Evaluation** 🚧 TODO
-- Deduplication (embedding similarity)
-- Validation report (blueprint compliance, grounding coverage)
-- LLM-as-judge quality evaluation
-- End-to-end pipeline test
+### **Phase 5 — Validation & Evaluation** ✅ COMPLETE
+- Deduplication (embedding / token similarity) with removal report
+- Validation report (schema, blueprint compliance, grounding, duplicates)
+- LLM-as-judge quality evaluation (separate module)
+- End-to-end pipeline + hermetic e2e test
 
 ---
 
