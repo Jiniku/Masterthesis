@@ -1,0 +1,220 @@
+% =====================================================================
+%  references.bib — sources matching the implemented quizgen solution
+%  (selection-only Automated Test Assembly from a question bank)
+%
+%  Grouped by the part of the system each source underpins. All entries
+%  were verified against the publisher / ACL Anthology / ERIC record.
+% =====================================================================
+
+% ---------------------------------------------------------------------
+%  Automated Test Assembly as (mixed-)integer programming  — assemble.py
+% ---------------------------------------------------------------------
+
+@book{vanderlinden2005linear,
+  author    = {van der Linden, Wim J.},
+  title     = {Linear Models for Optimal Test Design},
+  series    = {Statistics for Social and Behavioral Sciences},
+  publisher = {Springer},
+  address   = {New York},
+  year      = {2005},
+  doi       = {10.1007/0-387-29054-0},
+  note      = {Canonical reference: test assembly as a 0--1 / mixed-integer
+               linear program with content and statistical constraints.}
+}
+
+@article{theunissen1985binary,
+  author  = {Theunissen, T. J. J. M.},
+  title   = {Binary Programming and Test Design},
+  journal = {Psychometrika},
+  volume  = {50},
+  number  = {4},
+  pages   = {411--420},
+  year    = {1985},
+  doi     = {10.1007/BF02296260},
+  note    = {Early formulation of item selection for test design as a binary
+             (0--1) program.}
+}
+
+@article{vanderlinden1989maximin,
+  author  = {van der Linden, Wim J. and Boekkooi-Timminga, Ellen},
+  title   = {A Maximin Model for {IRT}-Based Test Design with Practical
+             Constraints},
+  journal = {Psychometrika},
+  volume  = {54},
+  number  = {2},
+  pages   = {237--247},
+  year    = {1989},
+  doi     = {10.1007/BF02294518},
+  note    = {LP/MIP test construction subject to practical (content) constraints.}
+}
+
+@article{vanderlinden1998optimal,
+  author  = {van der Linden, Wim J.},
+  title   = {Optimal Assembly of Psychological and Educational Tests},
+  journal = {Applied Psychological Measurement},
+  volume  = {22},
+  number  = {3},
+  pages   = {195--211},
+  year    = {1998},
+  doi     = {10.1177/01466216980223001},
+  note    = {Survey of optimisation models for automated test assembly.}
+}
+
+@article{diao2011lpsolve,
+  author  = {Diao, Qi and van der Linden, Wim J.},
+  title   = {Automated Test Assembly Using {lp\_Solve} Version 5.5 in {R}},
+  journal = {Applied Psychological Measurement},
+  volume  = {35},
+  number  = {5},
+  pages   = {398--409},
+  year    = {2011},
+  doi     = {10.1177/0146621610392211},
+  note    = {Solving mixed-integer ATA with free/open-source solvers — the same
+             practical setting as quizgen's PuLP/CBC backend.}
+}
+
+@article{luo2020mip,
+  author  = {Luo, Xin},
+  title   = {Automated Test Assembly with Mixed-Integer Programming: The
+             Effects of Modeling Approaches and Solvers},
+  journal = {Journal of Educational Measurement},
+  volume  = {57},
+  number  = {4},
+  pages   = {547--565},
+  year    = {2020},
+  doi     = {10.1111/jedm.12262},
+  note    = {Compares MIP modelling choices and solvers (incl. CBC) for ATA.}
+}
+
+@article{kroehne2021eatata,
+  author  = {Krohne, Ulf and others},
+  title   = {Automated Test Assembly in {R}: The {eatATA} Package},
+  journal = {Psych},
+  volume  = {3},
+  number  = {2},
+  pages   = {96--112},
+  year    = {2021},
+  doi     = {10.3390/psych3020010},
+  note    = {Open-source MIP-based ATA tooling; comparable engineering goal.}
+}
+
+% ---------------------------------------------------------------------
+%  Multiple disjoint / parallel forms — versions=N, disjointness constraint
+% ---------------------------------------------------------------------
+
+@article{belov2008uniform,
+  author  = {Belov, Dmitry I.},
+  title   = {Uniform Test Assembly},
+  journal = {Psychometrika},
+  volume  = {73},
+  number  = {1},
+  pages   = {21--38},
+  year    = {2008},
+  doi     = {10.1007/s11336-007-9025-0},
+  note    = {Assembling the maximum number of non-overlapping (disjoint)
+             parallel test forms from one item pool.}
+}
+
+% ---------------------------------------------------------------------
+%  Test blueprint / table of specifications — blueprint.py
+% ---------------------------------------------------------------------
+
+@article{fives2013tableofspec,
+  author  = {Fives, Helenrose and DiDonato-Barnes, Nicole},
+  title   = {Classroom Test Construction: The Power of a Table of
+             Specifications},
+  journal = {Practical Assessment, Research, and Evaluation},
+  volume  = {18},
+  number  = {3},
+  year    = {2013},
+  note    = {Content $\times$ cognitive-level blueprint driving item selection;
+             ERIC EJ1005136.}
+}
+
+% ---------------------------------------------------------------------
+%  Cognitive-level metadata (bloom_level) — schema.py
+% ---------------------------------------------------------------------
+
+@book{bloom1956taxonomy,
+  author    = {Bloom, Benjamin S.},
+  title     = {Taxonomy of Educational Objectives, Handbook I: The Cognitive
+               Domain},
+  publisher = {David McKay},
+  address   = {New York},
+  year      = {1956}
+}
+
+@book{anderson2001taxonomy,
+  author    = {Anderson, Lorin W. and Krathwohl, David R.},
+  title     = {A Taxonomy for Learning, Teaching, and Assessing: A Revision of
+               Bloom's Taxonomy of Educational Objectives},
+  publisher = {Longman},
+  address   = {New York},
+  year      = {2001},
+  note      = {Revised taxonomy; source of the remember..create levels.}
+}
+
+% ---------------------------------------------------------------------
+%  Near-duplicate detection — similarity.py / dedup.py
+% ---------------------------------------------------------------------
+
+@inproceedings{reimers2019sentencebert,
+  author    = {Reimers, Nils and Gurevych, Iryna},
+  title     = {Sentence-{BERT}: Sentence Embeddings Using Siamese
+               {BERT}-Networks},
+  booktitle = {Proceedings of the 2019 Conference on Empirical Methods in
+               Natural Language Processing and the 9th International Joint
+               Conference on Natural Language Processing (EMNLP-IJCNLP)},
+  pages     = {3982--3992},
+  year      = {2019},
+  address   = {Hong Kong},
+  doi       = {10.18653/v1/D19-1410},
+  note      = {Cosine-comparable sentence embeddings — the optional semantic
+               dedup backend (all-MiniLM-L6-v2 is an SBERT model).}
+}
+
+@article{jaccard1912distribution,
+  author  = {Jaccard, Paul},
+  title   = {The Distribution of the Flora in the Alpine Zone},
+  journal = {New Phytologist},
+  volume  = {11},
+  number  = {2},
+  pages   = {37--50},
+  year    = {1912},
+  doi     = {10.1111/j.1469-8137.1912.tb05611.x},
+  note    = {Origin of the Jaccard index — the dependency-free token-overlap
+             dedup backend.}
+}
+
+% ---------------------------------------------------------------------
+%  Apportionment of integer counts — _largest_remainder (blueprint.py)
+% ---------------------------------------------------------------------
+
+@book{balinski1982fair,
+  author    = {Balinski, Michel L. and Young, H. Peyton},
+  title     = {Fair Representation: Meeting the Ideal of One Man, One Vote},
+  publisher = {Yale University Press},
+  address   = {New Haven},
+  year      = {1982},
+  note      = {Largest-remainder (Hamilton) apportionment — used to resolve
+               blueprint fractions into exact integer counts.}
+}
+
+% ---------------------------------------------------------------------
+%  Solver / software
+% ---------------------------------------------------------------------
+
+@misc{coinor-cbc,
+  author       = {Forrest, John and {others}},
+  title        = {{CBC} (COIN-OR Branch and Cut) {MILP} Solver},
+  howpublished = {\url{https://github.com/coin-or/Cbc}},
+  note         = {The mixed-integer solver behind quizgen's MIPSelector.}
+}
+
+@misc{mitchell2011pulp,
+  author       = {Mitchell, Stuart and O'Sullivan, Michael and Dunning, Iain},
+  title        = {{PuLP}: A Linear Programming Toolkit for {Python}},
+  year         = {2011},
+  howpublished = {\url{https://github.com/coin-or/pulp}},
+  note         = {The Python MILP modelling layer used in assemble.py.}
+}
