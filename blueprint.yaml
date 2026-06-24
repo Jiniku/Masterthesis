@@ -1,0 +1,44 @@
+# Exam blueprint — the professor edits THIS file to drive Automated Test
+# Assembly. Generation (the LLM) produces a large tagged pool; this blueprint
+# selects the subset that becomes the exam(s).
+#
+# Run:  python -m quizgen.assemble --blueprint blueprint.yaml --pool pool.json --out exam.json
+
+title: "AI-1 Midterm Exam"
+
+# Total number of questions in each assembled exam version.
+total_questions: 20
+
+# Per-chapter share. Accepts percentages ("50%"), fractions (0.5) or exact
+# integer counts. Percentages/fractions are resolved to integers that sum to
+# total_questions. Here: 50% / 30% / 20%  ->  10 / 6 / 4.
+chapters:
+  1: "50%"
+  2: "30%"
+  3: "20%"
+
+# Target difficulty mix (resolved to counts: 8 easy / 8 medium / 4 hard).
+difficulty_mix:
+  easy: 0.4
+  medium: 0.4
+  hard: 0.2
+
+# Restrict to these question formats (omit / leave empty to allow all).
+allowed_qtypes:
+  - mcq
+  - true_false
+  - short_answer
+  - cloze
+
+# How many parallel, non-overlapping exam versions to produce.
+versions: 2
+
+# Selection strategy:
+#   greedy - fast greedy/random fill with content balancing
+#   mip    - mixed-integer programming (PuLP): meets per-chapter & difficulty
+#            counts exactly, maximises quality/coverage, forbids near-duplicates
+selector: mip
+
+# Two questions whose similarity is >= this are treated as near-duplicates and
+# never placed in the same or parallel versions.
+dedup_similarity: 0.85

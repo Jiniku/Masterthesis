@@ -16,6 +16,7 @@ the real :class:`LLMClient` by changing ``.env`` — nothing else changes.
 from __future__ import annotations
 
 import re
+import zlib
 
 from quizgen.llm_client import LLMClient
 
@@ -103,8 +104,30 @@ class MockLLMClient(LLMClient):
 
         return {"questions": questions}
 
+    @staticmethod
+    def _passage_region(user: str) -> str:
+        """Slice out just the source-passage text from the prompt.
+
+        Keywords must come from the chapter's *own* passages, not the shared
+        prompt scaffolding (Bloom descriptions, few-shot examples) which is
+        identical across chapters — otherwise questions from different chapters
+        look like near-duplicates.
+        """
+        for marker in ("SOURCE PASSAGES:", "TEXT PASSAGE:", "Retrieved passages"):
+            pos = user.find(marker)
+            if pos != -1:
+                tail = user[pos + len(marker):]
+                # Stop at the spec/instruction block that follows the passages.
+                for end in ("\nSPECIFICATIONS", "\n---", "\nRespond with"):
+                    epos = tail.find(end)
+                    if epos != -1:
+                        tail = tail[:epos]
+                return tail
+        return user
+
     def _keywords(self, text: str) -> list[str]:
         """Extract distinctive content words from the source passages."""
+        text = self._passage_region(text)
         seen: list[str] = []
         for w in _WORD_RE.findall(text):
             lw = w.lower()
@@ -114,47 +137,84 @@ class MockLLMClient(LLMClient):
                 break
         return seen or ["concept", "method", "system", "model", "rule"]
 
+    # Several stem templates per type so successive questions are lexically
+    # distinct (otherwise the dedup pass would collapse the whole pool).
+    _MCQ_TEMPLATES = [
+        "Which term best matches the description of '{kw}' in {kw2}?",
+        "In the context of {kw3}, what does '{kw}' most directly refer to?",
+        "Selecting from the passage, which concept is the counterpart of '{kw}'?",
+        "Regarding {kw2} and {kw3}, which option correctly characterises '{kw}'?",
+    ]
+    _SA_TEMPLATES = [
+        "Briefly explain the role of '{kw}' and how it relates to {kw2}.",
+        "Describe how '{kw}' interacts with {kw3} according to the passage.",
+        "Summarise what the passage says about '{kw}' in relation to {kw2}.",
+        "Explain why '{kw}' matters when reasoning about {kw3}.",
+    ]
+    _TF_TEMPLATES = [
+        "True or False: the passage links '{kw}' with {kw2}.",
+        "True or False: according to the text, '{kw}' depends on {kw3}.",
+        "True or False: '{kw}' and {kw2} are described as unrelated.",
+        "True or False: the passage treats '{kw}' as a form of {kw3}.",
+    ]
+    _CLOZE_TEMPLATES = [
+        "Fill in the blank: the concept relating {kw2} to {kw3} is ____.",
+        "Complete: when discussing {kw2}, the passage introduces ____.",
+        "Fill in the blank: ____ is the term the passage pairs with {kw3}.",
+        "Complete the sentence: the key idea connecting {kw2} and {kw3} is ____.",
+    ]
+
     def _make_question(self, chapter, section, qtype, bloom, difficulty,
                        keywords, chunk_ids, i) -> dict:
-        kw = keywords[i % len(keywords)]
-        kw2 = keywords[(i + 1) % len(keywords)]
-        kw3 = keywords[(i + 2) % len(keywords)]
+        k = len(keywords)
+        # Fold bloom/difficulty into the variation so questions from different
+        # generation batches don't collide (which would let dedup collapse the
+        # whole pool). `g` is an effective global-ish index.
+        salt = (zlib.crc32(f"{bloom}|{difficulty}".encode()) & 0xFFFF) % max(k, 7)
+        g = i + salt
+        # Spread keyword picks far apart so token overlap between questions stays low.
+        kw = keywords[g % k]
+        kw2 = keywords[(g * 3 + 5) % k]
+        kw3 = keywords[(g * 7 + 11) % k]
+        kw4 = keywords[(g * 5 + 2) % k]
         source_ref = chunk_ids[i % len(chunk_ids)]
+        t = g % 4
 
         if qtype == "mcq":
             return {
                 "chapter": chapter, "section": section, "qtype": "mcq",
                 "bloom_level": bloom, "difficulty": difficulty,
-                "stem": f"Which term from the passage is most associated with '{kw}'?",
-                "options": [f"A) {kw}", f"B) {kw2}", f"C) {kw3}", "D) None of these"],
+                "stem": self._MCQ_TEMPLATES[t].format(kw=kw, kw2=kw2, kw3=kw3),
+                "options": [f"A) {kw}", f"B) {kw2}", f"C) {kw3}", f"D) {kw4}"],
                 "answer": "A",
-                "explanation": f"The passage links '{kw}' to this concept, so option A is correct.",
+                "explanation": f"The passage associates '{kw}' with {kw2}, so option A is correct here.",
                 "source_ref": source_ref,
             }
         if qtype == "true_false":
             return {
                 "chapter": chapter, "section": section, "qtype": "true_false",
                 "bloom_level": bloom, "difficulty": difficulty,
-                "stem": f"True or False: the passage discusses '{kw}'.",
-                "options": None, "answer": "True",
-                "explanation": f"The term '{kw}' appears in the source passage, so the statement is True.",
+                "stem": self._TF_TEMPLATES[t].format(kw=kw, kw2=kw2, kw3=kw3),
+                "options": None, "answer": "True" if t % 2 == 0 else "False",
+                "explanation": f"The relationship between '{kw}' and {kw2} in the passage settles this.",
                 "source_ref": source_ref,
             }
         if qtype == "cloze":
             return {
                 "chapter": chapter, "section": section, "qtype": "cloze",
                 "bloom_level": bloom, "difficulty": difficulty,
-                "stem": f"Fill in the blank: a key concept in this section is ____ (relates to {kw2}).",
+                "stem": self._CLOZE_TEMPLATES[t].format(kw2=kw2, kw3=kw3),
                 "options": None, "answer": kw,
-                "explanation": f"'{kw}' is the term the passage uses in this context.",
+                "explanation": f"'{kw}' is the term the passage uses when connecting {kw2} and {kw3}.",
                 "source_ref": source_ref,
             }
         # short_answer
         return {
             "chapter": chapter, "section": section, "qtype": "short_answer",
             "bloom_level": bloom, "difficulty": difficulty,
-            "stem": f"Briefly explain the role of '{kw}' as described in the passage.",
-            "options": None, "answer": f"{kw} is described in the passage as relating to {kw2} and {kw3}.",
-            "explanation": f"A correct answer references '{kw}' as used in the source text.",
+            "stem": self._SA_TEMPLATES[t].format(kw=kw, kw2=kw2, kw3=kw3),
+            "options": None,
+            "answer": f"{kw} is described in the passage as relating to {kw2} and {kw3}.",
+            "explanation": f"A correct answer references how '{kw}' connects to {kw2} in the source text.",
             "source_ref": source_ref,
         }

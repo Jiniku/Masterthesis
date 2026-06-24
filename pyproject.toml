@@ -43,6 +43,9 @@ packages = ["quizgen"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning:pulp.*",
+]
 
 [tool.ruff]
 line-length = 99
