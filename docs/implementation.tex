@@ -20,6 +20,7 @@
 \usepackage{listings}
 \usepackage{tikz}
 \usepackage{caption}
+\usepackage{float}
 \usepackage[hidelinks]{hyperref}
 \usepackage{microtype}
 
@@ -237,12 +238,18 @@ produced it, so an assembled exam is self-describing.
 \end{tabular}
 \end{table}
 
+
 % =====================================================================
 \section{The blueprint}
 \label{sec:blueprint}
 
-A \emph{blueprint} (\pkg{blueprint.py}) is the small YAML a professor edits ---
-a \emph{table of specifications} for the exam:
+A \emph{blueprint} (\pkg{blueprint.py}) is the professor-facing specification
+for the exam. It is deliberately small: it says how many questions are needed,
+how the questions should be distributed over chapters, which difficulty mix is
+desired, which question types are allowed, and how many parallel versions should
+be produced. In assessment terminology, the blueprint acts as a \emph{table of
+specifications}: it translates pedagogical intent into measurable selection
+constraints.
 
 \begin{lstlisting}[language=]
 title: "AI-1 Midterm Exam"
@@ -255,25 +262,99 @@ selector: mip            # greedy | mip
 dedup_similarity: 0.85
 \end{lstlisting}
 
-\paragraph{Exact integer resolution.}
-Chapter and difficulty amounts may be integer counts, fractions, or
-\code{"NN\%"} strings. \code{Blueprint.resolve()} converts them to exact
-integer counts that sum to \code{total\_questions} using the
-\textbf{largest-remainder (Hamilton)} method:
-\begin{equation}
-\text{raw}_k = w_k \cdot N,\quad
-\text{floor}_k = \lfloor \text{raw}_k \rfloor,\quad
-r = N - \!\sum_k \text{floor}_k ,
-\end{equation}
-after which the $r$ leftover units go to the $k$ with the largest fractional
-remainders $\text{raw}_k - \text{floor}_k$. This guarantees, for instance, that
-``40/40/20 of 20'' resolves unambiguously to $8/8/4$.
+\subsection{Resolving human-friendly proportions into exact counts}
 
-\paragraph{YAML and flags (flags win).}
-The same constraints can be supplied or overridden on the command line, so a
-base \code{blueprint.yaml} can be tweaked per run. \code{build\_blueprint} loads
-the YAML (if any) into a dict and overwrites field-by-field with any provided
-flags before validating the \code{Blueprint}:
+The blueprint may contain exact counts (for example \code{1: 10}), fractions
+(for example \code{0.4}), or percentages (for example \code{"50\%"}). These
+forms are convenient for a human author, but the assembler needs integer counts:
+an exam cannot contain half a question. Therefore, \code{Blueprint.resolve()}
+turns each proportional requirement into an exact integer quota before assembly
+starts.
+
+For the example above, \code{total\_questions = 20}. The chapter quotas are
+resolved as follows:
+
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Chapter} & \textbf{Blueprint share} & \textbf{Resolved count} \\
+\midrule
+Chapter 1 & 50\% & $0.50 \cdot 20 = 10$ \\
+Chapter 2 & 30\% & $0.30 \cdot 20 = 6$ \\
+Chapter 3 & 20\% & $0.20 \cdot 20 = 4$ \\
+\midrule
+Total & 100\% & 20 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The difficulty mix is resolved in the same way:
+
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Difficulty} & \textbf{Blueprint share} & \textbf{Resolved count} \\
+\midrule
+Easy   & 0.4 & $0.4 \cdot 20 = 8$ \\
+Medium & 0.4 & $0.4 \cdot 20 = 8$ \\
+Hard   & 0.2 & $0.2 \cdot 20 = 4$ \\
+\midrule
+Total & 1.0 & 20 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Largest-remainder rounding}
+
+The simple case above divides evenly. More often, proportional requests produce
+non-integer raw counts. If $N$ is the requested total and $w_k$ is the requested
+share for category $k$, the raw quota is
+\begin{equation}
+  \text{raw}_k = w_k \cdot N .
+\end{equation}
+The implementation first gives every category the whole-number part,
+\begin{equation}
+  \text{floor}_k = \lfloor \text{raw}_k \rfloor,
+\end{equation}
+and then computes how many questions are still unassigned:
+\begin{equation}
+  r = N - \sum_k \text{floor}_k .
+\end{equation}
+The $r$ leftover questions are assigned to the categories with the largest
+fractional remainders,
+\begin{equation}
+  \rho_k = \text{raw}_k - \text{floor}_k .
+\end{equation}
+This is the largest-remainder method, also known as Hamilton apportionment.
+Its practical benefit is that it preserves the requested proportions as closely
+as possible while guaranteeing that the final integer counts sum exactly to
+$N$.
+
+For example, suppose $N=21$ and the chapter shares are again 50\%, 30\%, and
+20\%. The raw counts are $10.5$, $6.3$, and $4.2$. The floors are $10$, $6$,
+and $4$, so one question remains. The largest remainder is $0.5$ for Chapter~1,
+so the final quotas become $11$, $6$, and $4$. The sum is exactly $21$.
+
+\begin{lstlisting}[language=Python]
+def largest_remainder(weights: dict[str, float], total: int) -> dict[str, int]:
+    raw = {k: weights[k] * total for k in weights}
+    counts = {k: int(raw[k]) for k in weights}
+    remaining = total - sum(counts.values())
+
+    order = sorted(weights, key=lambda k: raw[k] - counts[k], reverse=True)
+    for k in order[:remaining]:
+        counts[k] += 1
+    return counts
+\end{lstlisting}
+
+\subsection{YAML and flags: command-line overrides}
+
+The same constraints can be supplied or overridden on the command line. This is
+useful when the user wants a stable base blueprint but occasionally needs to
+change only one parameter, such as the number of versions or the selector. The
+implementation first loads the YAML file, then applies command-line values
+field by field, and only then validates the resulting \code{Blueprint} object.
+In other words, flags take precedence over file defaults.
 
 \begin{lstlisting}[language=bash]
 python -m quizgen --pool questions.json --blueprint blueprint.yaml \
@@ -281,83 +362,397 @@ python -m quizgen --pool questions.json --blueprint blueprint.yaml \
 \end{lstlisting}
 
 % =====================================================================
-\section{Automated Test Assembly}
-\label{sec:assemble}
+\section{Algorithmic deep dive: how questions are picked}
+\label{sec:algorithm-deep-dive}
 
-Selection is \emph{Automated Test Assembly} (ATA): choose, from the pool, the
-subset(s) satisfying all blueprint constraints while maximising overall
-quality. Two interchangeable selectors sit behind one \code{Selector} interface
-(chosen by \code{blueprint.selector}):
-
-\begin{description}[leftmargin=1.4em,style=nextline]
-  \item[\code{GreedySelector}] A fast, content-balancing greedy fill. Honours
-  per-chapter counts, respects the difficulty marginal in a two-pass fill
-  (quota first, then remainder), and skips near-duplicates and questions already
-  used in another version. A good baseline with no optimality guarantee.
-  \item[\code{MIPSelector}] A Mixed-Integer Program (PuLP\,/\,CBC) that meets
-  per-chapter \emph{and} difficulty counts exactly, maximises total quality,
-  keeps parallel versions disjoint, and forbids near-duplicate pairs across
-  versions. This is the exact, auditable selection.
-\end{description}
-
-\paragraph{MIP formulation.}
-Let $\mathcal{P}$ be the (qtype-filtered) pool, $V$ the set of versions, and
-$x_{iv}\in\{0,1\}$ indicate that question $i$ is placed in version $v$. With
-per-chapter targets $n_c$, per-difficulty targets $m_d$, a quality weight
-$q_i$, and the set $D$ of near-duplicate pairs:
-
-\begin{align}
-\max \quad & \sum_{v\in V}\sum_{i\in\mathcal{P}} q_i\, x_{iv}
-   &&\text{(maximise total quality)} \label{eq:obj}\\
-\text{s.t.}\quad
-& \sum_{i:\,\text{chap}(i)=c} x_{iv} = n_c
-   && \forall v\in V,\ \forall c \label{eq:chap}\\
-& \sum_{i:\,\text{diff}(i)=d} x_{iv} = m_d
-   && \forall v\in V,\ \forall d \label{eq:diff}\\
-& \sum_{v\in V} x_{iv} \le 1
-   && \forall i\in\mathcal{P} \label{eq:disjoint}\\
-& \sum_{v\in V} x_{iv} + \sum_{v\in V} x_{jv} \le 1
-   && \forall (i,j)\in D \label{eq:dup}
-\end{align}
-
-Constraint~\eqref{eq:chap} fixes the per-chapter blueprint counts;
-\eqref{eq:diff} fixes the difficulty mix; \eqref{eq:disjoint} makes the
-parallel versions \emph{disjoint} (no question reused); \eqref{eq:dup} forbids
-any near-duplicate \emph{pair} from appearing anywhere across the assembled
-set. The objective~\eqref{eq:obj} ranks otherwise-feasible selections by a
-cheap quality proxy (\code{question\_quality}: rewards substantive
-explanations, well-formed 4-option MCQs, and the more discriminating Bloom
-levels).
-
-\paragraph{Graceful infeasibility.}
-If the exact program is infeasible for the given pool (e.g.\ too few
-\code{hard} questions in some chapter), the solver \emph{relaxes} the difficulty
-equalities~\eqref{eq:diff}, records \code{difficulty\_relaxed} in the
-diagnostics, and re-solves --- the per-chapter counts and totals are never
-silently violated. Capacity warnings are emitted up-front when the pool is too
-small to honour the demand.
+The selection problem can be understood as a controlled picking process. The
+pool is a box of tagged question cards. The blueprint says how many cards are
+needed, which chapters and difficulty levels must be represented, and how many
+different exam versions must be produced. The assembler then chooses cards so
+that every version has the required shape, while avoiding repeated or nearly
+repeated questions.
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[node distance=7mm and 14mm]
-  \node[data] (pool) {tagged pool\\($|\mathcal{P}|$ questions)};
-  \node[ctrl, right=of pool] (bp) {blueprint\\$n_c,\,m_d,\,|V|$};
-  \coordinate (mid) at ($(pool)!0.5!(bp)$);
-  \node[stage, below=10mm of mid, minimum width=40mm] (mip)
-        {MIP: maximise $\sum q_i x_{iv}$\\s.t.\ \eqref{eq:chap}--\eqref{eq:dup}};
-  \node[data, below left=10mm and -6mm of mip] (vA) {Version A};
-  \node[data, below right=10mm and -6mm of mip] (vB) {Version B};
+\resizebox{0.45\textwidth}{!}{%
+\begin{tikzpicture}[node distance=8mm and 11mm]
+  \node[data] (rules) {professor rules\\blueprint};
+  \node[data, right=20mm of rules] (pool) {question pool\\tagged items};
+  \node[stage, below=11mm of rules] (resolve) {1. Resolve\\exact quotas};
+  \node[stage, below=11mm of pool] (filter) {2. Filter\\and detect duplicates};
+  \node[stage, below=16mm of $(resolve)!0.5!(filter)$] (score) {3. Score\\question quality};
+  \node[stage, below=11mm of score] (select) {4. Select\\greedy or MIP};
+  \node[data, below=11mm of select] (out) {exam\_v1.json\\exam\_v2.json};
 
-  \draw[arr] (pool) -- (mip);
-  \draw[arr] (bp) -- (mip);
-  \draw[arr] (mip) -- (vA);
-  \draw[arr] (mip) -- (vB);
-  \node[font=\tiny,below=1mm of vA,align=center] {exact counts,\\disjoint, no dups};
-\end{tikzpicture}
-\caption{MIP assembly: one optimisation produces all parallel versions at once,
-guaranteeing they are disjoint and individually blueprint-compliant.}
-\label{fig:mip}
+  \draw[arr] (rules) -- (resolve);
+  \draw[arr] (pool) -- (filter);
+  \draw[arr] (resolve) -- (score);
+  \draw[arr] (filter) -- (score);
+  \draw[arr] (score) -- (select);
+  \draw[arr] (select) -- (out);
+\end{tikzpicture}%
+}
+\caption{Question selection as a four-stage algorithm: resolve the blueprint,
+filter and compare candidates, score the candidates, then assemble complete
+exam versions.}
+\label{fig:deep-pipeline}
 \end{figure}
+
+\subsection{Step 1: exact quotas from the blueprint}
+
+The first stage converts the professor's rule file into exact numbers. For the
+example blueprint in Section~\ref{sec:blueprint}, every version must contain
+20 questions: 10 from Chapter~1, 6 from Chapter~2, and 4 from Chapter~3. It
+must also contain 8 easy, 8 medium, and 4 hard questions. These numbers are the
+quotas used by both selectors.
+
+This separation matters: after quota resolution, the rest of the pipeline does
+not need to remember whether the professor wrote \code{"50\%"}, \code{0.5}, or
+\code{10}. It only receives a normalised demand vector. This makes the
+selection code simpler and makes the assembled output easier to audit.
+
+\subsection{Step 2: filtering candidates and finding near-duplicates}
+
+Before any optimisation happens, the assembler removes question types that are
+not allowed by the blueprint. If \code{allowed\_qtypes} contains all four
+implemented types (MCQ, true/false, short answer, and cloze), then no type-based
+filtering occurs. If the blueprint allows only MCQs, all non-MCQ questions are
+excluded before the selector sees the pool.
+
+The second part of this stage detects questions that are too similar. A common
+case is a generated or manually edited variant that changes only a small phrase,
+for example \emph{Define uninformed search (variant 1)} versus \emph{Define
+uninformed search (variant 2)}. Such questions should not appear together
+because they test the same content in nearly the same way.
+
+The dependency-free similarity backend uses token-Jaccard similarity. For two
+questions $q_1$ and $q_2$, let $T_1$ and $T_2$ be the sets of lowercased word
+tokens extracted from their stems, answers, and answer options. Similarity is
+then
+\begin{equation}
+  \mathrm{sim}(q_1,q_2)=\frac{|T_1 \cap T_2|}{|T_1 \cup T_2|}.
+\end{equation}
+The numerator counts tokens shared by both questions; the denominator counts
+all unique tokens appearing in either question. The score is therefore between
+0 and 1, where 0 means no lexical overlap and 1 means identical token sets.
+
+\begin{center}
+\begin{tabular}{@{}llp{7.7cm}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Name} & \textbf{Meaning} \\
+\midrule
+$q_1,q_2$ & Questions & The two candidate questions being compared. \\
+$T_1,T_2$ & Token sets & Unique lowercase word tokens from each question's stem, answer, and options. \\
+$T_1\cap T_2$ & Intersection & Tokens that occur in both questions. \\
+$T_1\cup T_2$ & Union & Tokens that occur in either question, with duplicates removed. \\
+$|\cdot|$ & Cardinality & The number of elements in a set. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For example, consider the following two stems:
+\begin{lstlisting}[language=]
+Question A: Define the term uninformed search
+Question B: Define the term uninformed search variant
+\end{lstlisting}
+Question~A has the token set \{define, the, term, uninformed, search\};
+Question~B has \{define, the, term, uninformed, search, variant\}. Five tokens
+are shared and six unique tokens exist overall, so the similarity is
+$5/6 \approx 0.833$. With a threshold of 0.85, this pair is very similar but
+would not be blocked; at or above 0.85, the pair would be added to the duplicate
+set $D$.
+
+\subsection{Step 3: scoring question quality}
+
+Once the admissible pool and duplicate-pair set are known, each candidate
+receives a lightweight quality weight. The weight is not a correctness score;
+it is a selection preference used when several feasible choices exist. Every
+question starts with a base value of 1.0, then receives bonuses for features
+that usually make an assessment item more useful.
+
+For question $i$, the implemented quality score is
+\begin{equation}
+  w_i = 1.0
+      + b_{\mathrm{explanation}}(q_i)
+      + b_{\mathrm{options}}(q_i)
+      + b_{\mathrm{bloom}}(q_i)
+      + b_{\mathrm{difficulty}}(q_i).
+\end{equation}
+
+\begin{center}
+\begin{tabular}{@{}p{4.0cm}p{8.5cm}@{}}
+\toprule
+\textbf{Component} & \textbf{Interpretation} \\
+\midrule
+Base score $1.0$ & Every valid question has at least minimal value. \\
+Explanation bonus & A longer explanation is preferred because it improves auditability and feedback value. The implementation gives a larger bonus for explanations of at least 60 characters and a smaller bonus for explanations of at least 30 characters. \\
+Options bonus & A multiple-choice question with exactly four options receives a bonus because it matches the expected MCQ format. \\
+Bloom-level bonus & Questions tagged as \code{analyze}, \code{evaluate}, or \code{create} receive a bonus because they target higher-order thinking. \\
+Difficulty bonus & Hard questions receive a small bonus so that the solver does not avoid challenging items when all constraints can still be met. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two examples illustrate the scale. A hard MCQ at Bloom level \code{evaluate},
+with four options and an 85-character explanation, receives
+\begin{equation}
+  1.0 + 0.30 + 0.20 + 0.20 + 0.10 = 1.80.
+\end{equation}
+An easy true/false question at Bloom level \code{remember}, with a 35-character
+explanation, receives
+\begin{equation}
+  1.0 + 0.15 = 1.15.
+\end{equation}
+The selector is still constrained by the blueprint; quality only decides among
+valid candidates.
+
+\subsection{Step 4a: the greedy selector}
+
+\code{GreedySelector} is a fast baseline. It builds one version at a time and
+one chapter at a time. Within a chapter, it shuffles available candidates using
+the configured seed, first tries to fill remaining difficulty quotas, and then
+uses any remaining candidates if the difficulty-aware pass cannot fill the
+chapter quota. After a question is selected, that question and its
+near-duplicates are blocked from later selections.
+
+The greedy logic can be summarised as follows:
+
+\begin{lstlisting}[language=]
+For each version:
+  For each required chapter:
+    collect candidates from this chapter
+    remove questions already used or blocked as near-duplicates
+    shuffle candidates reproducibly
+
+    pass 1: choose candidates that still help the difficulty quota
+    pass 2: fill any remaining chapter slots with available candidates
+
+    mark chosen questions as used
+    mark their near-duplicates as blocked
+\end{lstlisting}
+
+The strength of this approach is speed and simplicity. It is suitable for quick
+drafts, very large pools, or environments where no optimisation solver is
+available. Its limitation is that it makes local choices. Version~A is built
+before Version~B, so later versions may receive leftovers. Also, while the
+greedy selector tries to match the difficulty distribution, it does not prove
+that the final selection is globally optimal.
+
+\begin{center}
+\begin{tabular}{@{}p{5.7cm}p{6.8cm}@{}}
+\toprule
+\textbf{Strengths} & \textbf{Limitations} \\
+\midrule
+Very fast and easy to inspect. & No global optimality guarantee. \\
+Honours exact chapter counts. & Later versions may be constrained by earlier choices. \\
+Avoids reused and near-duplicate items. & Difficulty mix is heuristic rather than guaranteed. \\
+Useful baseline for comparison. & Does not maximise the quality objective. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Step 4b: the MIP selector}
+\label{sec:mip-deep}
+
+\code{MIPSelector} is the default exact method. It does not build one version
+and then move to the next. Instead, it models the whole assembly task at once:
+all questions, all versions, all quotas, all duplicate exclusions, and all
+quality weights are placed into one mathematical optimisation problem.
+
+A Mixed-Integer Program (MIP) consists of decision variables, an objective
+function, and constraints. In this implementation the decision variables are
+binary, so the model is also a Binary Integer Program: each decision is simply
+whether a question is selected for a version.
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Name} & \textbf{Meaning} \\
+\midrule
+$n$ & Pool size & Number of questions after type filtering. \\
+$V$ & Version set & The exam versions to produce, e.g. $V=\{1,2\}$. \\
+$i,j$ & Question indices & Individual questions in the filtered pool. \\
+$x_{iv}$ & Decision variable & 1 if question $i$ is placed in version $v$, otherwise 0. \\
+$w_i$ & Quality weight & Score from the quality function. \\
+$C$ & Chapter set & Chapters appearing in the blueprint. \\
+$n_c$ & Chapter quota & Required number of questions from chapter $c$. \\
+$L$ & Difficulty set & Easy, medium, and hard. \\
+$m_l$ & Difficulty quota & Required number of questions at difficulty level $l$. \\
+$D$ & Duplicate-pair set & Pairs of questions that are too similar. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Decision variables}
+
+For every question $i$ and version $v$, the solver creates one binary switch:
+\begin{equation}
+  x_{iv}\in\{0,1\}
+  \qquad\forall i\in\{0,\ldots,n-1\},\;\forall v\in V.
+\end{equation}
+If $x_{iv}=1$, question $i$ appears in version $v$. If $x_{iv}=0$, it does not.
+With 180 questions and 2 versions, this creates $180\cdot2=360$ switches. The
+solver's task is to turn exactly the right switches on.
+
+\begin{lstlisting}[language=Python]
+x = {
+    (i, v): pulp.LpVariable(f"x_{i}_{v}", cat="Binary")
+    for i in range(n) for v in V
+}
+\end{lstlisting}
+
+\subsubsection{Objective: maximise total selected quality}
+
+The objective is
+\begin{equation}
+  \max Z = \sum_{v\in V}\sum_{i=0}^{n-1} w_i x_{iv}.
+  \label{eq:deep-obj}
+\end{equation}
+The product $w_i x_{iv}$ contributes $w_i$ if the question is selected and 0 if
+it is not. Therefore, $Z$ is the total quality score across all selected
+questions in all versions. The solver maximises this value while obeying all
+constraints.
+
+\begin{lstlisting}[language=Python]
+prob += pulp.lpSum(quality[i] * x[(i, v)] for i in range(n) for v in V)
+\end{lstlisting}
+
+\subsubsection{Constraint 1: exact chapter counts}
+
+For every chapter $c$ and every version $v$, the number of selected questions
+from that chapter must equal the resolved chapter quota:
+\begin{equation}
+  \sum_{i\in Q_c} x_{iv}=n_c
+  \qquad \forall c\in C,\;\forall v\in V.
+  \label{eq:deep-chap}
+\end{equation}
+Here $Q_c$ is the set of all questions belonging to chapter $c$. In the example,
+each version must have exactly 10 questions from Chapter~1, 6 from Chapter~2,
+and 4 from Chapter~3. These constraints are hard constraints and are never
+silently relaxed.
+
+\subsubsection{Constraint 2: exact difficulty counts}
+
+For every difficulty level $l$ and every version $v$, the number of selected
+questions at that level must equal the resolved difficulty quota:
+\begin{equation}
+  \sum_{i\in Q_l} x_{iv}=m_l
+  \qquad \forall l\in L,\;\forall v\in V.
+  \label{eq:deep-diff}
+\end{equation}
+Here $Q_l$ is the set of all questions tagged with difficulty $l$. In the
+running example, every version must contain 8 easy, 8 medium, and 4 hard
+questions. These constraints interact with the chapter constraints: a selected
+question simultaneously counts toward one chapter quota and one difficulty
+quota.
+
+\subsubsection{Constraint 3: disjoint versions}
+
+No exact question may appear in more than one version:
+\begin{equation}
+  \sum_{v\in V}x_{iv}\leq 1
+  \qquad \forall i\in\{0,\ldots,n-1\}.
+  \label{eq:deep-disjoint}
+\end{equation}
+With two versions, this means $x_{i1}+x_{i2}\leq 1$. The question may appear in
+Version~1, or in Version~2, or in neither version, but never in both.
+
+\begin{center}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+$x_{i1}$ & $x_{i2}$ & Sum & Interpretation \\
+\midrule
+0 & 0 & 0 & Question unused. \\
+1 & 0 & 1 & Question appears only in Version 1. \\
+0 & 1 & 1 & Question appears only in Version 2. \\
+1 & 1 & 2 & Forbidden. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Constraint 4: no near-duplicate pairs}
+
+Near-duplicate questions are also mutually exclusive, even if they are not the
+same item. For every pair $(i,j)\in D$,
+\begin{equation}
+  \sum_{v\in V}x_{iv}+\sum_{v\in V}x_{jv}\leq 1.
+  \label{eq:deep-dup}
+\end{equation}
+This means that if questions $i$ and $j$ are too similar, at most one of them
+may be used anywhere across all assembled versions. The restriction is stronger
+than per-version deduplication: it also prevents putting one variant into
+Version~1 and the other variant into Version~2.
+
+\subsubsection{Complete MIP formulation}
+
+Putting the pieces together, the model is
+\begin{align}
+\max \quad & \sum_{v\in V}\sum_{i=0}^{n-1} w_i x_{iv} \\
+\text{s.t.}\quad
+& \sum_{i\in Q_c}x_{iv}=n_c && \forall c\in C,\;\forall v\in V, \\
+& \sum_{i\in Q_l}x_{iv}=m_l && \forall l\in L,\;\forall v\in V, \\
+& \sum_{v\in V}x_{iv}\leq 1 && \forall i, \\
+& \sum_{v\in V}x_{iv}+\sum_{v\in V}x_{jv}\leq 1 && \forall(i,j)\in D, \\
+& x_{iv}\in\{0,1\} && \forall i,\;\forall v\in V.
+\end{align}
+In plain terms, the solver finds the highest-quality selection such that each
+version has the required chapter coverage, the desired difficulty mix, no exact
+question overlap, and no near-duplicate overlap.
+
+\subsubsection{How the solver searches}
+
+The PuLP model is solved with CBC. Conceptually, the solver uses branch and
+bound. First, it solves a relaxed version of the problem in which binary
+variables may temporarily take fractional values between 0 and 1. This gives an
+upper bound on what could be achieved in that part of the search. The solver
+then branches on fractional variables, creating subproblems where a chosen
+variable is fixed to 0 or 1. If the best possible relaxed solution in a branch
+is already worse than the best integer solution found so far, that branch is
+pruned. This avoids enumerating all $2^{n|V|}$ possible switch settings.
+
+For the running scale of 180 questions and 2 versions, the raw binary search
+space is $2^{360}$ combinations, but branch-and-bound eliminates large parts of
+that space. The practical result is an exact solution without hand-coding a
+custom search procedure.
+
+\subsection{Fallback when the exact model is infeasible}
+
+Sometimes the pool cannot satisfy all constraints simultaneously. For instance,
+the blueprint may ask for four hard questions per version, but too few hard
+questions remain after type filtering and near-duplicate blocking. The
+implementation handles this with a two-phase solve:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item Try the full model with chapter, difficulty, disjointness, and
+        duplicate-pair constraints.
+  \item If no optimal feasible solution exists, remove the difficulty
+        equalities and solve again while keeping chapter counts, version
+        disjointness, and duplicate exclusions.
+\end{enumerate}
+
+When the second phase is used, the diagnostics record
+\code{difficulty\_relaxed}. This is intentionally asymmetric. Chapter coverage
+is treated as the core content requirement and is never silently violated;
+difficulty balance is important, but it is the safer constraint to relax when
+the pool is undersupplied.
+
+\subsection{Greedy and MIP comparison}
+
+\begin{center}
+\begin{tabular}{@{}p{3.6cm}p{4.4cm}p{4.4cm}@{}}
+\toprule
+\textbf{Feature} & \textbf{Greedy selector} & \textbf{MIP selector} \\
+\midrule
+Decision style & Picks incrementally, one version and chapter at a time. & Considers all versions and candidates in one optimisation model. \\
+Chapter counts & Exact. & Exact. \\
+Difficulty counts & Best effort. & Exact unless explicitly relaxed after infeasibility. \\
+Question overlap & Avoided. & Mathematically forbidden. \\
+Near-duplicates & Avoided by blocking. & Mathematically forbidden through pair constraints. \\
+Quality use & Not globally optimised. & Objective maximises total quality. \\
+Best use case & Fast drafts and simple pools. & Final assembly, tight pools, and auditable guarantees. \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 % =====================================================================
 \section{Deduplication}
@@ -369,23 +764,23 @@ predictable. \pkg{similarity.py} provides one API
 
 \begin{itemize}[nosep,leftmargin=1.4em]
   \item \textbf{Token-Jaccard} over the canonical question text
-  (stem~+~answer~+~MCQ options) --- dependency-free, always available:
-  \[
-    \mathrm{sim}(q_1,q_2) = \frac{|T(q_1)\cap T(q_2)|}{|T(q_1)\cup T(q_2)|},
-  \]
-  where $T(\cdot)$ is the set of lowercased word tokens.
+  (stem~+~answer~+~MCQ options). This backend is dependency-free and always
+  available. It works well when duplicate items reuse much of the same wording.
   \item \textbf{Embedding cosine} using an optional sentence-transformers
-  encoder, which catches paraphrases the lexical measure misses. Cosine
-  similarity is computed on $L_2$-normalised vectors.
+  encoder. This backend catches paraphrases that share less surface vocabulary.
+  Cosine similarity is computed on $L_2$-normalised vectors.
 \end{itemize}
 
-Pairs scoring at/above a threshold are returned as index pairs. The optional
-pool-dedup pass (\pkg{dedup.py}, CLI \code{--dedup}) drops the later member of
-each pair \emph{before} assembly; independently, the assembler forbids any
-surviving near-duplicate pair across versions (constraint~\eqref{eq:dup}). The
-backend degrades gracefully: with no encoder available it uses the offline
-token measure automatically.
+The returned object is a set of index pairs $D$. Each pair says that two
+questions are too similar to be used together. The optional pool-dedup pass
+(\pkg{dedup.py}, CLI \code{--dedup}) drops the later member of each pair before
+assembly. Independently, the assembler can pass $D$ into the selector so that
+surviving near-duplicate pairs are forbidden during version construction.
 
+This two-level design is useful in practice. Pool-level deduplication makes the
+candidate bank cleaner. Selector-level duplicate constraints add a second line
+of defence, ensuring that even if both members of a near-duplicate pair remain
+in the pool, they cannot both be selected into the final exam set.
 % =====================================================================
 \section{Validation}
 \label{sec:validate}

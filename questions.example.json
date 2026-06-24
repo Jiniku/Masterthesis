@@ -1301,6 +1301,1604 @@
       "answer": "A",
       "explanation": "Option A states the correct account of gradient descent (variant 3); the others are distractors.",
       "source_ref": "ch3_sec4_q71"
+    },
+    {
+      "id": "q072",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "true_false",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Breadth-first search always finds the shallowest goal node in an unweighted graph.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "BFS explores nodes level by level, so it always reaches the shallowest (least-depth) goal first.",
+      "source_ref": "ch1_sec1_q72"
+    },
+    {
+      "id": "q073",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "A* search is guaranteed to find an optimal solution even when the heuristic is inadmissible.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "A* requires an admissible heuristic (one that never overestimates) to guarantee optimality.",
+      "source_ref": "ch1_sec2_q73"
+    },
+    {
+      "id": "q074",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "true_false",
+      "bloom_level": "analyze",
+      "difficulty": "hard",
+      "stem": "Alpha-beta pruning changes the result returned by minimax; it merely speeds up the search.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Alpha-beta pruning does NOT change the result \u2014 it returns the same value as minimax while pruning provably irrelevant subtrees. The statement is self-contradictory.",
+      "source_ref": "ch1_sec3_q74"
+    },
+    {
+      "id": "q075",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "true_false",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "In propositional logic, a clause is a disjunction of literals.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "By definition, a clause in propositional logic is a disjunction (OR) of one or more literals.",
+      "source_ref": "ch1_sec4_q75"
+    },
+    {
+      "id": "q076",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "short_answer",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Name the search strategy that expands the node with the lowest path cost g(n) and uses no heuristic.",
+      "options": null,
+      "answer": "Uniform-cost search",
+      "explanation": "Uniform-cost search (UCS) expands the node with the smallest cumulative path cost g(n), without using a heuristic estimate.",
+      "source_ref": "ch1_sec1_q76"
+    },
+    {
+      "id": "q077",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Given a graph where every edge has cost 1, what is the time complexity of BFS in terms of branching factor b and depth d?",
+      "options": null,
+      "answer": "O(b^d)",
+      "explanation": "BFS visits every node up to depth d; with branching factor b the number of nodes is O(b^d).",
+      "source_ref": "ch1_sec2_q77"
+    },
+    {
+      "id": "q078",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "short_answer",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "What property must a heuristic satisfy in order for A* with graph search to be optimal?",
+      "options": null,
+      "answer": "Consistency (monotonicity)",
+      "explanation": "For A* with graph search, the heuristic must be consistent (also called monotone): h(n) \u2264 c(n,n') + h(n') for every successor n'.",
+      "source_ref": "ch1_sec3_q78"
+    },
+    {
+      "id": "q079",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "short_answer",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "In first-order logic, what is the process of finding a substitution that makes two expressions identical called?",
+      "options": null,
+      "answer": "Unification",
+      "explanation": "Unification is the process of finding a substitution (a mapping of variables to terms) that makes two first-order logic expressions syntactically identical.",
+      "source_ref": "ch1_sec4_q79"
+    },
+    {
+      "id": "q080",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Depth-first search uses a ______ data structure to manage its frontier.",
+      "options": null,
+      "answer": "stack",
+      "explanation": "DFS expands the most recently added node first, which corresponds to a LIFO (stack) data structure.",
+      "source_ref": "ch1_sec1_q80"
+    },
+    {
+      "id": "q081",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "cloze",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "A* evaluates nodes using the function f(n) = g(n) + ______, where g(n) is the path cost and the blank is the heuristic estimate.",
+      "options": null,
+      "answer": "h(n)",
+      "explanation": "A* combines the actual cost g(n) with the heuristic estimate h(n) to form the evaluation function f(n) = g(n) + h(n).",
+      "source_ref": "ch1_sec2_q81"
+    },
+    {
+      "id": "q082",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "cloze",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "In STRIPS planning, an action is described by its preconditions, an add list, and a ______ list.",
+      "options": null,
+      "answer": "delete",
+      "explanation": "STRIPS actions are defined by preconditions (what must hold), an add list (effects added), and a delete list (effects removed).",
+      "source_ref": "ch1_sec3_q82"
+    },
+    {
+      "id": "q083",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "cloze",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "The resolution rule in propositional logic derives a new clause by eliminating a complementary pair of ______.",
+      "options": null,
+      "answer": "literals",
+      "explanation": "Resolution cancels a literal and its negation (a complementary pair) from two parent clauses and combines the remaining literals into a resolvent.",
+      "source_ref": "ch1_sec4_q83"
+    },
+    {
+      "id": "q084",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "true_false",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "A Bayesian network is a directed acyclic graph (DAG) that represents conditional independence relationships among random variables.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "By definition, a Bayesian network is a DAG whose nodes are random variables and whose edges encode conditional dependencies.",
+      "source_ref": "ch2_sec1_q84"
+    },
+    {
+      "id": "q085",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In a hidden Markov model, the observation at time t depends on all previous hidden states.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "In an HMM, the observation at time t depends only on the hidden state at time t (the output independence assumption).",
+      "source_ref": "ch2_sec2_q85"
+    },
+    {
+      "id": "q086",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "true_false",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "The perceptron learning algorithm is guaranteed to converge to a solution for any dataset, whether linearly separable or not.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "The perceptron convergence theorem guarantees convergence only when the training data is linearly separable. For non-separable data, it may cycle indefinitely.",
+      "source_ref": "ch2_sec3_q86"
+    },
+    {
+      "id": "q087",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "true_false",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Decision trees can represent any Boolean function over a finite set of discrete attributes.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "A sufficiently deep decision tree can represent any Boolean function by enumerating all possible attribute-value combinations at its leaves.",
+      "source_ref": "ch2_sec4_q87"
+    },
+    {
+      "id": "q088",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "short_answer",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In a Bayesian network, what rule allows us to compute the joint probability as a product of conditional probabilities along the graph?",
+      "options": null,
+      "answer": "The chain rule (factorization via the DAG structure)",
+      "explanation": "The chain rule for Bayesian networks states that P(X1,...,Xn) = \u220f P(Xi | Parents(Xi)), factoring the joint distribution according to the DAG.",
+      "source_ref": "ch2_sec1_q88"
+    },
+    {
+      "id": "q089",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "Name the algorithm used in HMMs to find the most likely sequence of hidden states given a sequence of observations.",
+      "options": null,
+      "answer": "Viterbi algorithm",
+      "explanation": "The Viterbi algorithm uses dynamic programming to find the most probable path through the hidden states given the observation sequence.",
+      "source_ref": "ch2_sec2_q89"
+    },
+    {
+      "id": "q090",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "short_answer",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "What metric does the ID3 decision-tree algorithm use to select the best attribute for splitting?",
+      "options": null,
+      "answer": "Information gain (based on entropy)",
+      "explanation": "ID3 selects the attribute that maximises information gain, which is the reduction in entropy of the class variable.",
+      "source_ref": "ch2_sec3_q90"
+    },
+    {
+      "id": "q091",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "short_answer",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "In reinforcement learning, what is the name of the value that represents the expected cumulative future reward from a state under a given policy?",
+      "options": null,
+      "answer": "Value function (state-value function V(s))",
+      "explanation": "The state-value function V(s) gives the expected sum of discounted future rewards when starting in state s and following a given policy.",
+      "source_ref": "ch2_sec4_q91"
+    },
+    {
+      "id": "q092",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Bayes' theorem states that P(A|B) = P(B|A) \u00b7 P(A) / ______.",
+      "options": null,
+      "answer": "P(B)",
+      "explanation": "Bayes' theorem: P(A|B) = P(B|A)\u00b7P(A) / P(B), where P(B) is the marginal likelihood (evidence).",
+      "source_ref": "ch2_sec1_q92"
+    },
+    {
+      "id": "q093",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "cloze",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In a hidden Markov model, the probability of transitioning from hidden state i to hidden state j is stored in the ______ matrix.",
+      "options": null,
+      "answer": "transition",
+      "explanation": "The transition matrix A contains entries a_ij = P(s_t = j | s_{t-1} = i), governing state-to-state transitions.",
+      "source_ref": "ch2_sec2_q93"
+    },
+    {
+      "id": "q094",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "cloze",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "The closed-world assumption states that any ground atom not known to be ______ is considered false.",
+      "options": null,
+      "answer": "true",
+      "explanation": "Under the closed-world assumption, if a fact cannot be derived from the knowledge base, it is assumed to be false.",
+      "source_ref": "ch2_sec3_q94"
+    },
+    {
+      "id": "q095",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "cloze",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "Description logics use two main building blocks: ______ (classes of individuals) and roles (relationships between individuals).",
+      "options": null,
+      "answer": "concepts",
+      "explanation": "Description logics are built from concepts (unary predicates / classes) and roles (binary predicates / relationships).",
+      "source_ref": "ch2_sec4_q95"
+    },
+    {
+      "id": "q096",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "true_false",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Arc consistency guarantees that a constraint satisfaction problem has a unique solution.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Arc consistency prunes impossible values but does not guarantee a solution exists or that it is unique; backtracking may still be needed.",
+      "source_ref": "ch3_sec1_q96"
+    },
+    {
+      "id": "q097",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In a zero-sum game, the minimax value for one player is the negative of the minimax value for the other player.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "In a zero-sum game, one player's gain is the other's loss, so minimax values are negatives of each other.",
+      "source_ref": "ch3_sec2_q97"
+    },
+    {
+      "id": "q098",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "true_false",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "K-means clustering is guaranteed to converge to the global optimum of the sum-of-squared-errors objective.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "K-means converges to a local optimum, not necessarily the global one. The result depends on the initial centroid placement.",
+      "source_ref": "ch3_sec3_q98"
+    },
+    {
+      "id": "q099",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "true_false",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "Gradient descent updates parameters in the direction of the gradient of the loss function.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Gradient descent moves in the NEGATIVE gradient direction (steepest descent) to minimise the loss.",
+      "source_ref": "ch3_sec4_q99"
+    },
+    {
+      "id": "q100",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "short_answer",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In a constraint satisfaction problem, what does the term 'backtracking search' refer to?",
+      "options": null,
+      "answer": "A depth-first search that assigns variables one at a time and backtracks when a constraint is violated.",
+      "explanation": "Backtracking search systematically tries variable assignments and undoes (backtracks) the last assignment when it leads to a dead end.",
+      "source_ref": "ch3_sec1_q100"
+    },
+    {
+      "id": "q101",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "What is the Bellman equation for the optimal value function V*(s) in a Markov decision process?",
+      "options": null,
+      "answer": "V*(s) = max_a [ R(s,a) + \u03b3 \u03a3 P(s'|s,a) V*(s') ]",
+      "explanation": "The Bellman optimality equation expresses V*(s) as the maximum over actions of the immediate reward plus the discounted expected future value.",
+      "source_ref": "ch3_sec2_q101"
+    },
+    {
+      "id": "q102",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "short_answer",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "What probability model assumes that all features are conditionally independent given the class label?",
+      "options": null,
+      "answer": "Naive Bayes",
+      "explanation": "The naive Bayes classifier assumes conditional independence of features given the class, which simplifies the joint probability computation.",
+      "source_ref": "ch3_sec3_q102"
+    },
+    {
+      "id": "q103",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "short_answer",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "In utility theory, what does the 'maximum expected utility' (MEU) principle state?",
+      "options": null,
+      "answer": "A rational agent should choose the action that maximises its expected utility.",
+      "explanation": "MEU states that a rational agent selects the action yielding the highest expected utility, averaging over uncertain outcomes weighted by their probabilities.",
+      "source_ref": "ch3_sec4_q103"
+    },
+    {
+      "id": "q104",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "A constraint satisfaction problem is defined by a set of variables, a set of domains, and a set of ______.",
+      "options": null,
+      "answer": "constraints",
+      "explanation": "A CSP consists of variables, their domains (possible values), and constraints that restrict which combinations of values are allowed.",
+      "source_ref": "ch3_sec1_q104"
+    },
+    {
+      "id": "q105",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "cloze",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In a Markov decision process, the discount factor ______ (symbol) controls the trade-off between immediate and future rewards.",
+      "options": null,
+      "answer": "\u03b3 (gamma)",
+      "explanation": "The discount factor \u03b3 \u2208 [0,1] reduces the weight of future rewards: a low \u03b3 favours immediate rewards, a high \u03b3 values long-term returns.",
+      "source_ref": "ch3_sec2_q105"
+    },
+    {
+      "id": "q106",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "cloze",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "K-means clustering assigns each data point to the cluster whose ______ is nearest.",
+      "options": null,
+      "answer": "centroid",
+      "explanation": "In each iteration, k-means assigns points to the cluster with the nearest centroid (mean of the cluster's current members).",
+      "source_ref": "ch3_sec3_q106"
+    },
+    {
+      "id": "q107",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "cloze",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "The learning rate in gradient descent controls the ______ of each parameter update step.",
+      "options": null,
+      "answer": "size (magnitude)",
+      "explanation": "The learning rate \u03b1 scales the gradient, determining how large each update step is. Too large leads to divergence; too small slows convergence.",
+      "source_ref": "ch3_sec4_q107"
+    },
+    {
+      "id": "q108",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Which of the following is NOT a property of breadth-first search?",
+      "options": [
+        "A) It is complete in finite graphs",
+        "B) It uses a FIFO queue for the frontier",
+        "C) It is optimal when all step costs are equal",
+        "D) It requires less memory than depth-first search"
+      ],
+      "answer": "D",
+      "explanation": "BFS stores all frontier nodes, requiring O(b^d) memory, which is typically MORE than DFS's O(b\u00b7d).",
+      "source_ref": "ch1_sec1_q108"
+    },
+    {
+      "id": "q109",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "In a game tree, alpha-beta pruning is most effective when moves are ordered:",
+      "options": [
+        "A) Randomly",
+        "B) Worst-first (worst moves examined first)",
+        "C) Best-first (best moves examined first)",
+        "D) By increasing depth"
+      ],
+      "answer": "C",
+      "explanation": "When the best moves are examined first, alpha-beta can prune the largest number of branches, reducing the effective branching factor to approximately \u221ab.",
+      "source_ref": "ch1_sec3_q109"
+    },
+    {
+      "id": "q110",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "Which of the following is a valid reason for using partial-order planning over total-order planning?",
+      "options": [
+        "A) Partial-order planners always produce shorter plans",
+        "B) Partial-order planners avoid unnecessary ordering commitments",
+        "C) Partial-order planners do not require precondition analysis",
+        "D) Partial-order planners guarantee polynomial-time solutions"
+      ],
+      "answer": "B",
+      "explanation": "Partial-order planning leaves the ordering of independent actions flexible (least commitment), which can reduce the search space.",
+      "source_ref": "ch2_sec1_q110"
+    },
+    {
+      "id": "q111",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "What does the forward algorithm compute in a hidden Markov model?",
+      "options": [
+        "A) The most likely state sequence",
+        "B) The probability of the observation sequence",
+        "C) The posterior distribution over parameters",
+        "D) The transition matrix from data"
+      ],
+      "answer": "B",
+      "explanation": "The forward algorithm computes P(O | \u03bb), the probability of the observation sequence given the model parameters, using dynamic programming.",
+      "source_ref": "ch2_sec3_q111"
+    },
+    {
+      "id": "q112",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "Which problem is the perceptron fundamentally unable to solve?",
+      "options": [
+        "A) AND gate",
+        "B) OR gate",
+        "C) XOR gate",
+        "D) NOT gate"
+      ],
+      "answer": "C",
+      "explanation": "XOR is not linearly separable, so a single-layer perceptron cannot learn it. AND, OR, and NOT are all linearly separable.",
+      "source_ref": "ch2_sec4_q112"
+    },
+    {
+      "id": "q113",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "When applying the AC-3 algorithm, what happens when a domain becomes empty?",
+      "options": [
+        "A) The algorithm continues with the remaining variables",
+        "B) The CSP is determined to be unsatisfiable (under current assignments)",
+        "C) A random value is inserted into the domain",
+        "D) The algorithm restarts with new initial domains"
+      ],
+      "answer": "B",
+      "explanation": "If AC-3 empties a variable's domain, no consistent assignment is possible, so the CSP is unsatisfiable (at this point in the search).",
+      "source_ref": "ch3_sec1_q113"
+    },
+    {
+      "id": "q114",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "What distinguishes a Markov decision process (MDP) from a standard Markov chain?",
+      "options": [
+        "A) An MDP includes actions and rewards",
+        "B) An MDP has no transition probabilities",
+        "C) An MDP can only model deterministic environments",
+        "D) An MDP does not satisfy the Markov property"
+      ],
+      "answer": "A",
+      "explanation": "An MDP extends a Markov chain by introducing actions (decisions) and a reward function, enabling an agent to optimise its behaviour.",
+      "source_ref": "ch3_sec2_q114"
+    },
+    {
+      "id": "q115",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "hard",
+      "stem": "Stochastic gradient descent (SGD) differs from batch gradient descent in that SGD:",
+      "options": [
+        "A) Always converges to the global minimum",
+        "B) Computes the gradient using a single (or mini-batch) sample per step",
+        "C) Requires no learning rate parameter",
+        "D) Cannot be used with neural networks"
+      ],
+      "answer": "B",
+      "explanation": "SGD approximates the true gradient by computing it over one sample (or a small mini-batch), making each update faster but noisier than batch gradient descent.",
+      "source_ref": "ch3_sec4_q115"
+    },
+    {
+      "id": "q116",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "short_answer",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Explain why iterative deepening depth-first search (IDDFS) combines the space efficiency of DFS with the completeness of BFS.",
+      "options": null,
+      "answer": "IDDFS performs DFS with increasing depth limits, using O(bd) memory like DFS but guaranteeing it finds the shallowest goal like BFS.",
+      "explanation": "By repeating DFS at increasing depth limits, IDDFS uses linear memory (O(bd)) while still exploring all nodes at depth d before d+1, ensuring completeness and optimality for unit-cost edges.",
+      "source_ref": "ch1_sec2_q116"
+    },
+    {
+      "id": "q117",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "cloze",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "In reinforcement learning, the Q-function Q(s, a) represents the expected ______ when taking action a in state s and following the policy thereafter.",
+      "options": null,
+      "answer": "cumulative (discounted) reward",
+      "explanation": "Q(s, a) is the action-value function, giving the expected total discounted reward from taking action a in state s and then following the policy.",
+      "source_ref": "ch2_sec2_q117"
+    },
+    {
+      "id": "q118",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "short_answer",
+      "bloom_level": "create",
+      "difficulty": "medium",
+      "stem": "Why might a naive Bayes classifier still perform well despite the unrealistic independence assumption?",
+      "options": null,
+      "answer": "Because the classification decision depends on the ranking of posterior probabilities, not their exact values, and the independence assumption still often preserves the correct ranking.",
+      "explanation": "Even when features are not truly independent, the relative ordering of P(class|features) across classes is often preserved, so the argmax prediction remains correct.",
+      "source_ref": "ch3_sec3_q118"
+    },
+    {
+      "id": "q119",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "cloze",
+      "bloom_level": "evaluate",
+      "difficulty": "easy",
+      "stem": "Forward checking in CSP solving eliminates values from the domains of ______ variables whenever a new assignment is made.",
+      "options": null,
+      "answer": "unassigned (future)",
+      "explanation": "Forward checking is a look-ahead technique that prunes values from the domains of unassigned (future) variables that are inconsistent with the current assignment.",
+      "source_ref": "ch3_sec1_q119"
+    },
+    {
+      "id": "q120",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "Iterative deepening depth-first search has the same space complexity as breadth-first search.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "IDDFS uses O(bd) space like DFS, whereas BFS requires O(b^d). IDDFS is much more space-efficient.",
+      "source_ref": "ch1_sec1_q120"
+    },
+    {
+      "id": "q121",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "true_false",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "If heuristic h1 dominates heuristic h2 (i.e., h1(n) \u2265 h2(n) for all n), then A* with h1 will never expand more nodes than A* with h2.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "A dominating admissible heuristic is more informative and causes A* to expand fewer (or equal) nodes before finding the optimal solution.",
+      "source_ref": "ch1_sec2_q121"
+    },
+    {
+      "id": "q122",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "true_false",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "Forward chaining in propositional logic is both sound and complete for definite (Horn) clauses.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "Forward chaining iteratively derives all consequences of the knowledge base and is sound and complete for definite clauses (Horn clauses without negation).",
+      "source_ref": "ch1_sec3_q122"
+    },
+    {
+      "id": "q123",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "true_false",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "In first-order logic, a ground term is a term that contains no variables.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "By definition, a ground term consists only of constants and function symbols applied to constants \u2014 no variables appear.",
+      "source_ref": "ch1_sec4_q123"
+    },
+    {
+      "id": "q124",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "true_false",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "Depth-limited search is complete if the depth limit is set to be at least as large as the depth of the shallowest goal.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "If the depth limit \u2265 the shallowest goal depth, DLS will explore all nodes up to that depth and find the goal, making it complete.",
+      "source_ref": "ch1_sec1_q124"
+    },
+    {
+      "id": "q125",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "short_answer",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "What is the name of the search strategy that combines uniform-cost search and greedy best-first search?",
+      "options": null,
+      "answer": "A* search",
+      "explanation": "A* combines the actual path cost g(n) from UCS with the heuristic estimate h(n) from greedy best-first, evaluating f(n) = g(n) + h(n).",
+      "source_ref": "ch1_sec2_q125"
+    },
+    {
+      "id": "q126",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "short_answer",
+      "bloom_level": "analyze",
+      "difficulty": "hard",
+      "stem": "In backward chaining, what triggers the evaluation of a rule?",
+      "options": null,
+      "answer": "A query (goal) that matches the head (consequent) of the rule.",
+      "explanation": "Backward chaining starts from the goal and works backward: when a goal matches a rule's head, the rule's body becomes a set of subgoals to prove.",
+      "source_ref": "ch1_sec3_q126"
+    },
+    {
+      "id": "q127",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "What is the most general unifier (MGU) of f(X, b) and f(a, Y)?",
+      "options": null,
+      "answer": "{X/a, Y/b}",
+      "explanation": "Substituting X\u2192a and Y\u2192b makes both terms f(a, b), and this is the most general such substitution.",
+      "source_ref": "ch1_sec4_q127"
+    },
+    {
+      "id": "q128",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "short_answer",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "What data structure does breadth-first search use to store its frontier?",
+      "options": null,
+      "answer": "A FIFO queue",
+      "explanation": "BFS expands nodes in the order they were discovered, which requires a first-in-first-out (FIFO) queue.",
+      "source_ref": "ch1_sec1_q128"
+    },
+    {
+      "id": "q129",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "Greedy best-first search expands the node that appears closest to the goal according to the ______ function alone.",
+      "options": null,
+      "answer": "heuristic (h(n))",
+      "explanation": "Greedy best-first search uses only the heuristic estimate h(n) to decide which node to expand next, ignoring the path cost g(n).",
+      "source_ref": "ch1_sec2_q129"
+    },
+    {
+      "id": "q130",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "cloze",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "In propositional logic, a knowledge base is unsatisfiable if and only if resolution can derive the ______ clause.",
+      "options": null,
+      "answer": "empty",
+      "explanation": "The resolution refutation procedure derives the empty clause (a contradiction) if and only if the knowledge base is unsatisfiable.",
+      "source_ref": "ch1_sec3_q130"
+    },
+    {
+      "id": "q131",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "cloze",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "A heuristic is called ______ if it never overestimates the true cost to reach the goal.",
+      "options": null,
+      "answer": "admissible",
+      "explanation": "An admissible heuristic satisfies h(n) \u2264 h*(n) for all n, where h*(n) is the true optimal cost from n to the goal.",
+      "source_ref": "ch1_sec4_q131"
+    },
+    {
+      "id": "q132",
+      "chapter": 1,
+      "section": "1.1",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "What is the worst-case time complexity of depth-first search on a graph with branching factor b and maximum depth m?",
+      "options": [
+        "A) O(b\u00b7m)",
+        "B) O(b^m)",
+        "C) O(m^b)",
+        "D) O(b + m)"
+      ],
+      "answer": "B",
+      "explanation": "DFS may explore all nodes in the search tree, which in the worst case has b^m nodes (branching factor b raised to the maximum depth m).",
+      "source_ref": "ch1_sec1_q132"
+    },
+    {
+      "id": "q133",
+      "chapter": 1,
+      "section": "1.2",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "Which of the following heuristics for the 8-puzzle is guaranteed to be admissible?",
+      "options": [
+        "A) Number of tiles out of place (misplaced tiles)",
+        "B) Sum of Manhattan distances of tiles from goal positions",
+        "C) Both A and B",
+        "D) Neither A nor B"
+      ],
+      "answer": "C",
+      "explanation": "Both the misplaced-tiles heuristic and the Manhattan-distance heuristic never overestimate the actual number of moves needed, so both are admissible.",
+      "source_ref": "ch1_sec2_q133"
+    },
+    {
+      "id": "q134",
+      "chapter": 1,
+      "section": "1.3",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Which of the following is a key advantage of backward chaining over forward chaining?",
+      "options": [
+        "A) It always derives all possible conclusions",
+        "B) It is goal-directed, only exploring relevant rules",
+        "C) It does not require a knowledge base",
+        "D) It handles negation more effectively"
+      ],
+      "answer": "B",
+      "explanation": "Backward chaining is goal-directed: it only considers rules whose conclusions are relevant to the query, avoiding the exhaustive derivation of forward chaining.",
+      "source_ref": "ch1_sec3_q134"
+    },
+    {
+      "id": "q135",
+      "chapter": 1,
+      "section": "1.4",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "easy",
+      "stem": "What does the 'occur check' prevent in the unification algorithm?",
+      "options": [
+        "A) Binding a variable to a term that contains that variable",
+        "B) Using the same variable name twice",
+        "C) Applying the same substitution twice",
+        "D) Creating circular function definitions"
+      ],
+      "answer": "A",
+      "explanation": "The occur check prevents infinite structures by refusing to unify a variable X with a term that contains X (e.g., X = f(X) would create an infinite term).",
+      "source_ref": "ch1_sec4_q135"
+    },
+    {
+      "id": "q136",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In a Bayesian network, if two nodes have no directed path between them and share no common ancestor, they are marginally independent.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Independence in Bayesian networks is determined by d-separation, not merely by the absence of a directed path. Two nodes may share a common ancestor that makes them dependent.",
+      "source_ref": "ch2_sec1_q136"
+    },
+    {
+      "id": "q137",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "true_false",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "The Baum-Welch algorithm is used to learn the parameters of a hidden Markov model from unlabelled observation sequences.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "Baum-Welch is an EM (Expectation-Maximisation) algorithm that iteratively re-estimates HMM parameters (transition and emission probabilities) from observed data.",
+      "source_ref": "ch2_sec2_q137"
+    },
+    {
+      "id": "q138",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "true_false",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "Overfitting in decision trees can be mitigated by pruning branches that do not improve performance on a validation set.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "Post-pruning (e.g., reduced-error pruning) removes branches that do not improve validation accuracy, reducing overfitting to training noise.",
+      "source_ref": "ch2_sec3_q138"
+    },
+    {
+      "id": "q139",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "true_false",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "In Q-learning, the agent must know the transition model of the environment to update its Q-values.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Q-learning is model-free: it updates Q-values directly from experienced (state, action, reward, next-state) tuples without requiring a transition model.",
+      "source_ref": "ch2_sec4_q139"
+    },
+    {
+      "id": "q140",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "true_false",
+      "bloom_level": "apply",
+      "difficulty": "easy",
+      "stem": "Variable elimination is an exact inference algorithm for Bayesian networks.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "Variable elimination systematically sums out (marginalises) non-query variables from the joint distribution, producing exact posterior probabilities.",
+      "source_ref": "ch2_sec1_q140"
+    },
+    {
+      "id": "q141",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "short_answer",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "What does the term 'emission probability' refer to in a hidden Markov model?",
+      "options": null,
+      "answer": "The probability of observing a particular output given the current hidden state.",
+      "explanation": "Emission probabilities P(o_t | s_t) specify how likely each observation is for each hidden state, forming the observation model of the HMM.",
+      "source_ref": "ch2_sec2_q141"
+    },
+    {
+      "id": "q142",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "In the context of decision trees, what is 'entropy' measuring?",
+      "options": null,
+      "answer": "The impurity or uncertainty of a set of examples with respect to their class labels.",
+      "explanation": "Entropy H(S) = -\u03a3 p_i log\u2082(p_i) quantifies how mixed (impure) the class distribution is in a dataset; pure sets have entropy 0.",
+      "source_ref": "ch2_sec3_q142"
+    },
+    {
+      "id": "q143",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "short_answer",
+      "bloom_level": "analyze",
+      "difficulty": "hard",
+      "stem": "What is the exploration-exploitation trade-off in reinforcement learning?",
+      "options": null,
+      "answer": "The dilemma between trying new actions to discover potentially better rewards (exploration) versus choosing actions known to give high rewards (exploitation).",
+      "explanation": "An agent must balance exploiting actions with known high rewards against exploring unknown actions that might yield even higher rewards.",
+      "source_ref": "ch2_sec4_q143"
+    },
+    {
+      "id": "q144",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "short_answer",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "What is the name of the graphical criterion used to determine conditional independence in a Bayesian network?",
+      "options": null,
+      "answer": "d-separation",
+      "explanation": "d-separation is a graph-theoretic criterion: nodes X and Y are conditionally independent given Z if every path from X to Y is blocked by Z.",
+      "source_ref": "ch2_sec1_q144"
+    },
+    {
+      "id": "q145",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "The three canonical problems for HMMs are evaluation, decoding, and ______.",
+      "options": null,
+      "answer": "learning (parameter estimation)",
+      "explanation": "The three HMM problems are: evaluation (probability of observations), decoding (most likely state sequence), and learning (estimating model parameters).",
+      "source_ref": "ch2_sec2_q145"
+    },
+    {
+      "id": "q146",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "cloze",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "In a decision tree, a leaf node represents a ______ prediction for the target variable.",
+      "options": null,
+      "answer": "class (or value)",
+      "explanation": "Each leaf node holds the classification decision \u2014 the predicted class label for instances reaching that leaf.",
+      "source_ref": "ch2_sec3_q146"
+    },
+    {
+      "id": "q147",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "cloze",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "In temporal-difference learning, the update rule uses the difference between the ______ reward plus the estimated future value and the current value estimate.",
+      "options": null,
+      "answer": "observed (immediate)",
+      "explanation": "TD learning uses the TD error: \u03b4 = r + \u03b3V(s') \u2212 V(s), where r is the observed immediate reward and V(s') is the estimated value of the next state.",
+      "source_ref": "ch2_sec4_q147"
+    },
+    {
+      "id": "q148",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "cloze",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In a Bayesian network, a node is conditionally independent of its non-descendants given its ______.",
+      "options": null,
+      "answer": "parents",
+      "explanation": "The Markov property of Bayesian networks states that each node is conditionally independent of all non-descendants given its parent nodes.",
+      "source_ref": "ch2_sec1_q148"
+    },
+    {
+      "id": "q149",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "Which algorithm is used to compute the probability of an observation sequence in an HMM efficiently?",
+      "options": [
+        "A) Viterbi algorithm",
+        "B) Forward algorithm",
+        "C) Baum-Welch algorithm",
+        "D) Backward elimination"
+      ],
+      "answer": "B",
+      "explanation": "The forward algorithm computes P(O|\u03bb) efficiently using dynamic programming, summing over all possible state sequences.",
+      "source_ref": "ch2_sec2_q149"
+    },
+    {
+      "id": "q150",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "hard",
+      "stem": "What is the main risk of using a very deep, unpruned decision tree?",
+      "options": [
+        "A) Underfitting the training data",
+        "B) High bias in predictions",
+        "C) Overfitting the training data",
+        "D) Inability to handle categorical features"
+      ],
+      "answer": "C",
+      "explanation": "A deep unpruned tree memorises training data (low bias, high variance), leading to overfitting and poor generalisation to unseen data.",
+      "source_ref": "ch2_sec3_q150"
+    },
+    {
+      "id": "q151",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "In reinforcement learning, what does the symbol \u03b3 (gamma) represent?",
+      "options": [
+        "A) The learning rate",
+        "B) The discount factor for future rewards",
+        "C) The exploration probability",
+        "D) The reward signal"
+      ],
+      "answer": "B",
+      "explanation": "\u03b3 is the discount factor (0 \u2264 \u03b3 \u2264 1) that determines how much the agent values future rewards relative to immediate ones.",
+      "source_ref": "ch2_sec4_q151"
+    },
+    {
+      "id": "q152",
+      "chapter": 2,
+      "section": "2.1",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Which of the following is an approximate inference method for Bayesian networks?",
+      "options": [
+        "A) Variable elimination",
+        "B) Junction tree algorithm",
+        "C) Gibbs sampling",
+        "D) Enumeration by cases"
+      ],
+      "answer": "C",
+      "explanation": "Gibbs sampling is a Markov chain Monte Carlo method that approximates the posterior by drawing samples, unlike exact methods like variable elimination.",
+      "source_ref": "ch2_sec1_q152"
+    },
+    {
+      "id": "q153",
+      "chapter": 2,
+      "section": "2.3",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "easy",
+      "stem": "The C4.5 algorithm improves upon ID3 by adding the ability to handle:",
+      "options": [
+        "A) Only binary attributes",
+        "B) Continuous (numeric) attributes and missing values",
+        "C) Only categorical attributes",
+        "D) Reinforcement signals"
+      ],
+      "answer": "B",
+      "explanation": "C4.5 extends ID3 by supporting continuous attributes (via threshold splits), missing values, and post-pruning.",
+      "source_ref": "ch2_sec3_q153"
+    },
+    {
+      "id": "q154",
+      "chapter": 2,
+      "section": "2.2",
+      "qtype": "short_answer",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Explain why the Markov assumption is both a strength and a limitation of HMMs.",
+      "options": null,
+      "answer": "Strength: it simplifies computation by making the future state depend only on the current state. Limitation: it cannot capture long-range dependencies where the distant past affects the present.",
+      "explanation": "The first-order Markov assumption P(s_t|s_{t-1},...,s_1) = P(s_t|s_{t-1}) enables efficient algorithms but fails when history beyond one step is important.",
+      "source_ref": "ch2_sec2_q154"
+    },
+    {
+      "id": "q155",
+      "chapter": 2,
+      "section": "2.4",
+      "qtype": "cloze",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "An \u03b5-greedy policy selects a random action with probability ______ and the greedy (best-known) action otherwise.",
+      "options": null,
+      "answer": "\u03b5 (epsilon)",
+      "explanation": "The \u03b5-greedy strategy explores by choosing a random action with probability \u03b5 and exploits the current best action with probability 1\u2212\u03b5.",
+      "source_ref": "ch2_sec4_q155"
+    },
+    {
+      "id": "q156",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "true_false",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "The minimum remaining values (MRV) heuristic selects the variable with the fewest legal values remaining in its domain.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "MRV (also called 'fail-first') picks the variable with the smallest domain, aiming to detect failures early in the search.",
+      "source_ref": "ch3_sec1_q156"
+    },
+    {
+      "id": "q157",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "true_false",
+      "bloom_level": "analyze",
+      "difficulty": "hard",
+      "stem": "Value iteration for an MDP is guaranteed to converge to the optimal value function for any discount factor \u03b3 < 1.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "With \u03b3 < 1 the Bellman operator is a contraction mapping, so value iteration converges to V* by the Banach fixed-point theorem.",
+      "source_ref": "ch3_sec2_q157"
+    },
+    {
+      "id": "q158",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "true_false",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "In supervised learning, the training data includes both input features and the corresponding correct output labels.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "Supervised learning uses labelled examples (input-output pairs) to learn a mapping from features to labels.",
+      "source_ref": "ch3_sec3_q158"
+    },
+    {
+      "id": "q159",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "true_false",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Batch gradient descent always converges to the global minimum for non-convex loss functions.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "For non-convex loss functions, gradient descent can get stuck in local minima or saddle points. Global convergence is only guaranteed for convex functions.",
+      "source_ref": "ch3_sec4_q159"
+    },
+    {
+      "id": "q160",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "true_false",
+      "bloom_level": "apply",
+      "difficulty": "easy",
+      "stem": "In a CSP, the degree heuristic selects the variable involved in the largest number of constraints on unassigned variables.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "The degree heuristic is a tie-breaker for MRV: it selects the variable with the most constraints on remaining unassigned variables to maximise constraint propagation.",
+      "source_ref": "ch3_sec1_q160"
+    },
+    {
+      "id": "q161",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "short_answer",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "What is the difference between policy iteration and value iteration for solving MDPs?",
+      "options": null,
+      "answer": "Policy iteration alternates between full policy evaluation and policy improvement, while value iteration combines both steps by applying the Bellman optimality update directly.",
+      "explanation": "Policy iteration evaluates the current policy to convergence then improves it; value iteration applies the max-over-actions Bellman update in each sweep, which implicitly does both.",
+      "source_ref": "ch3_sec2_q161"
+    },
+    {
+      "id": "q162",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "short_answer",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "What is the 'elbow method' used for in k-means clustering?",
+      "options": null,
+      "answer": "To choose the number of clusters k by plotting the within-cluster sum of squared errors (SSE) against k and finding the 'elbow' where the rate of decrease sharply changes.",
+      "explanation": "The elbow method helps select an appropriate k: the SSE decreases as k increases, but at some point the gain flattens \u2014 this 'elbow' suggests a good trade-off.",
+      "source_ref": "ch3_sec3_q162"
+    },
+    {
+      "id": "q163",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "short_answer",
+      "bloom_level": "analyze",
+      "difficulty": "hard",
+      "stem": "Why might adding a regularisation term (e.g., L2 penalty) to the loss function help a machine learning model generalise better?",
+      "options": null,
+      "answer": "Regularisation penalises large parameter values, discouraging the model from fitting noise in the training data, which reduces overfitting and improves generalisation.",
+      "explanation": "L2 regularisation adds \u03bb||w||\u00b2 to the loss, shrinking weights toward zero. This constrains model complexity and reduces the variance of predictions on unseen data.",
+      "source_ref": "ch3_sec4_q163"
+    },
+    {
+      "id": "q164",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "short_answer",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "What advantage does the least-constraining-value (LCV) heuristic provide in CSP solving?",
+      "options": null,
+      "answer": "LCV selects the value that rules out the fewest choices for neighbouring variables, maximising the chance that the remaining variables can still be assigned consistently.",
+      "explanation": "By leaving maximum flexibility for other variables, LCV reduces the likelihood of needing to backtrack.",
+      "source_ref": "ch3_sec1_q164"
+    },
+    {
+      "id": "q165",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "short_answer",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "What are the four components that formally define a Markov decision process?",
+      "options": null,
+      "answer": "States (S), actions (A), transition function (T or P), and reward function (R).",
+      "explanation": "An MDP is a tuple (S, A, T, R) \u2014 sometimes also including the discount factor \u03b3 \u2014 that fully specifies the sequential decision problem.",
+      "source_ref": "ch3_sec2_q165"
+    },
+    {
+      "id": "q166",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "In k-means, the algorithm alternates between assigning points to the nearest centroid and recomputing each centroid as the ______ of its assigned points.",
+      "options": null,
+      "answer": "mean (average)",
+      "explanation": "After assignment, each centroid is updated to the mean of all data points assigned to it, minimising within-cluster variance.",
+      "source_ref": "ch3_sec3_q166"
+    },
+    {
+      "id": "q167",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "cloze",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "In machine learning, the error on unseen data is called the ______ error.",
+      "options": null,
+      "answer": "generalisation (test)",
+      "explanation": "Generalisation error measures how well the model performs on data it was not trained on, which is the true goal of learning.",
+      "source_ref": "ch3_sec4_q167"
+    },
+    {
+      "id": "q168",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "cloze",
+      "bloom_level": "apply",
+      "difficulty": "hard",
+      "stem": "In constraint propagation, the AC-3 algorithm maintains a queue of ______ to check and enforce arc consistency.",
+      "options": null,
+      "answer": "arcs (variable pairs / edges)",
+      "explanation": "AC-3 processes a queue of arcs (directed edges between constrained variable pairs), removing inconsistent values from domains until the queue is empty.",
+      "source_ref": "ch3_sec1_q168"
+    },
+    {
+      "id": "q169",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "cloze",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "Policy iteration converges to the optimal policy in a ______ number of iterations because the number of deterministic policies is finite.",
+      "options": null,
+      "answer": "finite",
+      "explanation": "Since there are finitely many deterministic policies and each iteration strictly improves the policy (or it has converged), policy iteration terminates in a finite number of steps.",
+      "source_ref": "ch3_sec2_q169"
+    },
+    {
+      "id": "q170",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "mcq",
+      "bloom_level": "understand",
+      "difficulty": "easy",
+      "stem": "Which of the following is an unsupervised learning algorithm?",
+      "options": [
+        "A) Linear regression",
+        "B) Decision tree classification",
+        "C) K-means clustering",
+        "D) Logistic regression"
+      ],
+      "answer": "C",
+      "explanation": "K-means is unsupervised \u2014 it groups data into clusters without using labelled examples. The others are all supervised learning algorithms.",
+      "source_ref": "ch3_sec3_q170"
+    },
+    {
+      "id": "q171",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "mcq",
+      "bloom_level": "apply",
+      "difficulty": "medium",
+      "stem": "If the learning rate in gradient descent is too large, what is most likely to happen?",
+      "options": [
+        "A) The algorithm converges very slowly",
+        "B) The parameters oscillate or diverge without converging",
+        "C) The algorithm always finds the global minimum faster",
+        "D) The loss function becomes convex"
+      ],
+      "answer": "B",
+      "explanation": "An excessively large learning rate causes the parameter updates to overshoot the minimum, leading to oscillation or divergence.",
+      "source_ref": "ch3_sec4_q171"
+    },
+    {
+      "id": "q172",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "mcq",
+      "bloom_level": "evaluate",
+      "difficulty": "hard",
+      "stem": "Which constraint propagation technique is strictly stronger than arc consistency?",
+      "options": [
+        "A) Node consistency",
+        "B) Forward checking",
+        "C) Path consistency",
+        "D) Bound consistency"
+      ],
+      "answer": "C",
+      "explanation": "Path consistency considers triples of variables and is strictly stronger than arc consistency (which considers only pairs). It can detect more inconsistencies.",
+      "source_ref": "ch3_sec1_q172"
+    },
+    {
+      "id": "q173",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "mcq",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "stem": "In an MDP, what does a stationary policy mean?",
+      "options": [
+        "A) The policy changes at each time step",
+        "B) The policy depends only on the current state, not on time",
+        "C) The policy always selects random actions",
+        "D) The policy requires a complete model of the environment"
+      ],
+      "answer": "B",
+      "explanation": "A stationary policy \u03c0(s) maps states to actions independent of the time step, remaining constant over the agent's lifetime.",
+      "source_ref": "ch3_sec2_q173"
+    },
+    {
+      "id": "q174",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "mcq",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Which evaluation metric is most appropriate for a binary classification problem with highly imbalanced classes?",
+      "options": [
+        "A) Accuracy",
+        "B) F1-score",
+        "C) Mean squared error",
+        "D) R-squared"
+      ],
+      "answer": "B",
+      "explanation": "Accuracy is misleading with class imbalance (predicting the majority class gives high accuracy). F1-score (harmonic mean of precision and recall) better reflects performance on the minority class.",
+      "source_ref": "ch3_sec3_q174"
+    },
+    {
+      "id": "q175",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "short_answer",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "Explain the bias-variance trade-off in machine learning.",
+      "options": null,
+      "answer": "Bias is error from simplifying assumptions (underfitting); variance is error from sensitivity to training data fluctuations (overfitting). The trade-off means reducing one often increases the other; the goal is to minimise total error.",
+      "explanation": "Simple models have high bias (underfit), complex models have high variance (overfit). The optimal model complexity balances both for minimal expected test error.",
+      "source_ref": "ch3_sec4_q175"
+    },
+    {
+      "id": "q176",
+      "chapter": 3,
+      "section": "3.1",
+      "qtype": "cloze",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "stem": "A binary CSP has constraints that each involve exactly ______ variables.",
+      "options": null,
+      "answer": "two",
+      "explanation": "Binary constraints relate pairs of variables (e.g., X \u2260 Y). Higher-order constraints (involving 3 or more variables) require different representations.",
+      "source_ref": "ch3_sec1_q176"
+    },
+    {
+      "id": "q177",
+      "chapter": 3,
+      "section": "3.2",
+      "qtype": "true_false",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "stem": "In a fully observable MDP, the optimal policy can always be represented as a deterministic function from states to actions.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "True",
+      "explanation": "For fully observable MDPs with a fixed reward function and discount factor \u03b3 < 1, there always exists an optimal deterministic policy (a consequence of the Bellman equations).",
+      "source_ref": "ch3_sec2_q177"
+    },
+    {
+      "id": "q178",
+      "chapter": 3,
+      "section": "3.3",
+      "qtype": "short_answer",
+      "bloom_level": "understand",
+      "difficulty": "medium",
+      "stem": "What is cross-validation and why is it useful?",
+      "options": null,
+      "answer": "Cross-validation splits the data into k folds, trains on k\u22121 folds and tests on the remaining fold, rotating through all folds. It provides a more reliable estimate of model performance than a single train/test split.",
+      "explanation": "k-fold cross-validation reduces evaluation variance by averaging performance across k different splits, giving a better sense of how well the model generalises.",
+      "source_ref": "ch3_sec3_q178"
+    },
+    {
+      "id": "q179",
+      "chapter": 3,
+      "section": "3.4",
+      "qtype": "cloze",
+      "bloom_level": "evaluate",
+      "difficulty": "medium",
+      "stem": "Mini-batch gradient descent uses a subset of ______ training examples per update, combining benefits of both stochastic and batch gradient descent.",
+      "options": null,
+      "answer": "m (a small number of / a mini-batch of)",
+      "explanation": "Mini-batch GD processes m examples per step (1 < m < N), offering a balance: less noisy than SGD (m=1) and faster than batch GD (m=N).",
+      "source_ref": "ch3_sec4_q179"
     }
   ]
 }
