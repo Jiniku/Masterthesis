@@ -9,6 +9,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage[margin=2.4cm]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
@@ -23,6 +24,9 @@
 \usepackage{microtype}
 
 \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.geometric}
+
+% Absorb small line-overflows instead of letting text protrude into the margin.
+\emergencystretch=3em
 
 % ---- colours ---------------------------------------------------------
 \definecolor{cstage}{RGB}{222,235,247}
@@ -55,7 +59,7 @@
 \lstset{style=py}
 
 \newcommand{\code}[1]{\texttt{\small #1}}
-\newcommand{\mod}[1]{\texttt{\small #1}}
+\newcommand{\pkg}[1]{\texttt{\small #1}}
 
 % ---- TikZ node styles ------------------------------------------------
 \tikzset{
@@ -143,7 +147,8 @@ Table~\ref{tab:modules}.
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[node distance=10mm and 16mm]
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=8mm and 11mm]
   \node[data] (pool) {question bank\\(JSON)};
   \node[stage, right=of pool] (dedup) {Deduplicate\\(optional)};
   \node[stage, right=of dedup] (assemble) {Assemble\\(greedy / MIP)};
@@ -156,7 +161,8 @@ Table~\ref{tab:modules}.
   \draw[arr] (assemble) -- (validate);
   \draw[arr] (validate) -- (out);
   \draw[arr] (bp) -- (assemble);
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{The selection pipeline. Green = data, blue = processing stage, red =
 professor input. The blueprint drives assembly; dedup and validation are
 opt-in.}
@@ -172,13 +178,13 @@ opt-in.}
 \toprule
 \textbf{Stage} & \textbf{Module} & \textbf{Responsibility} \\
 \midrule
-Data model    & \mod{schema.py}    & Pydantic models (\code{Question}, \code{Quiz}); JSON-Schema export. \\
-Blueprint     & \mod{blueprint.py} & Blueprint model; count resolution (largest-remainder). \\
-Deduplicate   & \mod{dedup.py}, \mod{similarity.py} & Near-duplicate detection (Jaccard / embedding); pool dedup. \\
-Assemble      & \mod{assemble.py}  & Automated Test Assembly: greedy and MIP selectors. \\
-Validate      & \mod{validate.py}, \mod{textmatch.py} & Schema, blueprint, grounding, duplicate checks. \\
-CLI           & \mod{\_\_main\_\_.py} & Pool + blueprint/flags $\to$ exam version(s). \\
-Config        & \mod{config.py}    & Single optional embedding-model setting. \\
+Data model    & \pkg{schema.py}    & Pydantic models (\code{Question}, \code{Quiz}); JSON-Schema export. \\
+Blueprint     & \pkg{blueprint.py} & Blueprint model; count resolution (largest-remainder). \\
+Deduplicate   & \pkg{dedup.py}, \pkg{similarity.py} & Near-duplicate detection (Jaccard / embedding); pool dedup. \\
+Assemble      & \pkg{assemble.py}  & Automated Test Assembly: greedy and MIP selectors. \\
+Validate      & \pkg{validate.py}, \pkg{textmatch.py} & Schema, blueprint, grounding, duplicate checks. \\
+CLI           & \pkg{\_\_main\_\_.py} & Pool + blueprint/flags $\to$ exam version(s). \\
+Config        & \pkg{config.py}    & Single optional embedding-model setting. \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -187,7 +193,7 @@ Config        & \mod{config.py}    & Single optional embedding-model setting. \\
 \section{Data model and contracts}
 \label{sec:schema}
 
-Every artifact is a Pydantic~v2 model (\mod{schema.py}), so the data contract
+Every artifact is a Pydantic~v2 model (\pkg{schema.py}), so the data contract
 is the single source of truth and the JSON~Schema is \emph{exported} from it
 (committed under \code{schemas/}) rather than hand-written --- the two cannot
 drift. The central type is \code{Question}:
@@ -235,7 +241,7 @@ produced it, so an assembled exam is self-describing.
 \section{The blueprint}
 \label{sec:blueprint}
 
-A \emph{blueprint} (\mod{blueprint.py}) is the small YAML a professor edits ---
+A \emph{blueprint} (\pkg{blueprint.py}) is the small YAML a professor edits ---
 a \emph{table of specifications} for the exam:
 
 \begin{lstlisting}[language=]
@@ -358,7 +364,7 @@ guaranteeing they are disjoint and individually blueprint-compliant.}
 \label{sec:dedup}
 
 Near-duplicate questions waste blueprint slots and make parallel versions
-predictable. \mod{similarity.py} provides one API
+predictable. \pkg{similarity.py} provides one API
 (\code{find\_near\_duplicate\_pairs}) with two backends:
 
 \begin{itemize}[nosep,leftmargin=1.4em]
@@ -374,7 +380,7 @@ predictable. \mod{similarity.py} provides one API
 \end{itemize}
 
 Pairs scoring at/above a threshold are returned as index pairs. The optional
-pool-dedup pass (\mod{dedup.py}, CLI \code{--dedup}) drops the later member of
+pool-dedup pass (\pkg{dedup.py}, CLI \code{--dedup}) drops the later member of
 each pair \emph{before} assembly; independently, the assembler forbids any
 surviving near-duplicate pair across versions (constraint~\eqref{eq:dup}). The
 backend degrades gracefully: with no encoder available it uses the offline
@@ -384,7 +390,7 @@ token measure automatically.
 \section{Validation}
 \label{sec:validate}
 
-\code{validate\_exam} (\mod{validate.py}, CLI \code{--validate}) produces a
+\code{validate\_exam} (\pkg{validate.py}, CLI \code{--validate}) produces a
 structured report over four dimensions:
 
 \begin{enumerate}[nosep,leftmargin=1.6em]
@@ -401,14 +407,14 @@ structured report over four dimensions:
 
 The overall gate \code{passed} is true only if no schema-invalid items exist
 and (if checked) the blueprint is satisfied. The grounding check reuses the
-dependency-free \code{extract\_content\_words} helper in \mod{textmatch.py},
+dependency-free \code{extract\_content\_words} helper in \pkg{textmatch.py},
 kept separate so validation pulls in no heavy dependencies.
 
 % =====================================================================
 \section{Command-line interface}
 \label{sec:cli}
 
-\mod{\_\_main\_\_.py} is the single entry point. It loads the pool, builds the
+\pkg{\_\_main\_\_.py} is the single entry point. It loads the pool, builds the
 blueprint from the YAML and/or flag overrides, optionally de-duplicates,
 assembles, writes one \code{Quiz} JSON per version (each embedding the resolved
 blueprint), and --- with \code{--validate} --- writes a Markdown report per
@@ -446,7 +452,7 @@ literature from project-specific engineering.
 \textbf{Implemented in code} & \textbf{Technique / idea} & \textbf{Source lineage} \\
 \midrule
 \endhead
-\mod{assemble.py} (\code{MIPSelector}) &
+\pkg{assemble.py} (\code{MIPSelector}) &
 Automated Test Assembly as 0--1 MIP &
 van der Linden, \emph{Linear Models for Optimal Test Design} (2005); exam
 assembly as integer programming. \\[2pt]
@@ -454,7 +460,7 @@ assembly as integer programming. \\[2pt]
 Objective-weighted selection in ATA &
 van der Linden (2005); here a lightweight quality proxy rather than IRT
 information. \\[2pt]
-\mod{blueprint.py} &
+\pkg{blueprint.py} &
 Test blueprint / table of specifications &
 Classical assessment design; content $\times$ cognitive-level specification
 driving item selection. \\[2pt]
@@ -462,7 +468,7 @@ driving item selection. \\[2pt]
 Revised Bloom's taxonomy &
 Anderson \& Krathwohl (2001), revising Bloom (1956); cognitive-level tag used
 in the quality objective. \\[2pt]
-\mod{similarity.py} (embedding cosine) &
+\pkg{similarity.py} (embedding cosine) &
 Semantic near-duplicate detection &
 Sentence-BERT embeddings (Reimers \& Gurevych, 2019). \\
 \midrule
@@ -474,7 +480,7 @@ Standard apportionment arithmetic; ensures integer counts sum exactly. \\[2pt]
 \code{GreedySelector} &
 Greedy content-balanced baseline &
 Engineering baseline to contrast against the MIP. \\[2pt]
-Jaccard fallback, \mod{textmatch.py} &
+Jaccard fallback, \pkg{textmatch.py} &
 Lexical token overlap &
 Dependency-free fallbacks for offline operation. \\[2pt]
 YAML$+$flag blueprint, CLI &
