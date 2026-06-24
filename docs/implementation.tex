@@ -1,0 +1,644 @@
+% =====================================================================
+%  quizgen — Implementation Report
+%  Generate-then-Select Exam/Quiz Generation from a Textbook
+%
+%  Compile with:  pdflatex implementation.tex   (run twice for refs)
+%             or:  tectonic implementation.tex
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.geometric}
+
+% ---- colours ---------------------------------------------------------
+\definecolor{cstage}{RGB}{222,235,247}
+\definecolor{cstageb}{RGB}{ 49,130,189}
+\definecolor{cdata}{RGB}{229,245,224}
+\definecolor{cdatab}{RGB}{ 49,163, 84}
+\definecolor{cctrl}{RGB}{253,224,221}
+\definecolor{cctrlb}{RGB}{222, 45, 38}
+\definecolor{cgrey}{RGB}{99,99,99}
+\definecolor{ckw}{RGB}{0,90,160}
+\definecolor{cstr}{RGB}{160,60,0}
+\definecolor{ccmt}{RGB}{100,120,100}
+
+% ---- listings (python / yaml) ---------------------------------------
+\lstdefinestyle{py}{
+  language=Python,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{ckw}\bfseries,
+  stringstyle=\color{cstr},
+  commentstyle=\color{ccmt}\itshape,
+  numberstyle=\tiny\color{cgrey},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{cgrey!40},
+  framesep=4pt,
+  columns=fullflexible,
+  keepspaces=true,
+}
+\lstset{style=py}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\mod}[1]{\texttt{\small #1}}
+
+% ---- TikZ node styles ------------------------------------------------
+\tikzset{
+  stage/.style={rectangle, rounded corners=3pt, draw=cstageb, fill=cstage,
+                line width=0.8pt, align=center, inner sep=6pt, font=\small\bfseries,
+                minimum height=10mm, minimum width=26mm},
+  data/.style={rectangle, draw=cdatab, fill=cdata, line width=0.7pt,
+               align=center, inner sep=5pt, font=\footnotesize,
+               minimum height=8mm},
+  ctrl/.style={rectangle, rounded corners=2pt, draw=cctrlb, fill=cctrl,
+               line width=0.7pt, align=center, inner sep=4pt, font=\footnotesize},
+  arr/.style={-{Stealth[length=2.4mm]}, line width=0.8pt, draw=cgrey},
+  darr/.style={-{Stealth[length=2.2mm]}, line width=0.7pt, draw=cdatab, densely dashed},
+}
+
+% =====================================================================
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2.2cm}
+{\Huge\bfseries quizgen\par}
+\vspace{6mm}
+{\LARGE Automated Exam / Quiz Generation from a Textbook\par}
+\vspace{3mm}
+{\large A \emph{generate-then-select} pipeline with RAG grounding,\\
+Bloom-controlled generation, and Automated Test Assembly\par}
+\vspace{1.4cm}
+{\large\bfseries Implementation Report\par}
+\vspace{4mm}
+{\normalsize Master's Thesis --- KWARC Group\\
+Friedrich-Alexander-Universit\"at Erlangen-N\"urnberg\par}
+\vfill
+{\small This report documents the implemented logic of the \code{quizgen}
+codebase, the algorithms behind each stage, and the literature each
+technique draws on.\par}
+\vspace{8mm}
+{\small\today\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% =====================================================================
+\section{Overview}
+\label{sec:overview}
+
+\code{quizgen} turns a course textbook into one or more exam papers that
+match a professor-specified \emph{blueprint}. The guiding design decision
+is the separation of \textbf{generation} from \textbf{selection}: instead
+of asking a language model to write ``the exam'' in one shot, the system
+first \emph{over-generates} a large, richly tagged \emph{pool} of candidate
+questions, and then \emph{selects} an optimal subset that satisfies the
+blueprint exactly. This is the \emph{generate-then-select} (or
+over-generate-and-rank) pattern.
+
+\paragraph{Why this architecture.}
+A single end-to-end prompt couples two concerns that have very different
+failure modes. Generation is creative and stochastic; satisfying hard
+quantitative constraints (``exactly 10 questions from Chapter~1, a
+40/40/20 difficulty split, two non-overlapping versions'') is a
+combinatorial optimisation problem that LLMs are poor at and that has an
+exact, auditable solution. By decoupling them we get:
+\begin{itemize}[nosep,leftmargin=1.4em]
+  \item \textbf{Auditability} --- every question traces back to a source
+        chunk (\code{source\_ref}); every exam traces back to a blueprint.
+  \item \textbf{Exact constraint satisfaction} --- selection is solved with
+        a Mixed-Integer Program, not coaxed from a prompt.
+  \item \textbf{Reusability} --- one pool yields many exams / versions.
+  \item \textbf{Separable evaluation} --- grounding, deduplication, schema
+        validation and LLM-as-judge each operate on finished artifacts.
+\end{itemize}
+
+\paragraph{The five stages.}
+Figure~\ref{fig:pipeline} shows the full flow. The stages map one-to-one
+onto modules in the \code{quizgen} package (Table~\ref{tab:modules}).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=8mm and 12mm]
+  \node[stage] (ingest) {1.~Ingest};
+  \node[stage, right=of ingest] (index) {2.~Index\\(RAG)};
+  \node[stage, right=of index] (gen) {3.~Generate\\pool};
+  \node[stage, right=of gen] (dedup) {4a.~Dedup};
+  \node[stage, below=14mm of dedup] (assemble) {4b.~Assemble\\(ATA / MIP)};
+  \node[stage, left=of assemble] (validate) {5.~Validate};
+  \node[stage, left=of validate] (judge) {5.~Judge\\(optional)};
+
+  % data artifacts
+  \node[data, above=6mm of ingest] (pdf) {textbook.pdf};
+  \node[data, above=6mm of gen] (pool) {tagged pool};
+  \node[data, below=7mm of assemble] (exams) {exam versions\\+ reports};
+  \node[ctrl, above=6mm of assemble] (bp) {blueprint.yaml};
+
+  \draw[arr] (pdf) -- (ingest);
+  \draw[arr] (ingest) -- (index);
+  \draw[arr] (index) -- (gen);
+  \draw[arr] (gen) -- (dedup);
+  \draw[arr] (dedup) -- (assemble);
+  \draw[arr] (assemble) -- (validate);
+  \draw[arr] (validate) -- (judge);
+  \draw[arr] (bp) -- (assemble);
+  \draw[arr] (assemble) -- (exams);
+  \draw[darr] (gen) to[bend left=12] (pool);
+  \draw[darr] (index) to[out=-30,in=180] node[below,font=\tiny,pos=0.6]{grounding ctx} (gen);
+\end{tikzpicture}
+\caption{The generate-then-select pipeline. Blue = processing stage,
+green = data artifact, red = professor input. Stages 1--3 \emph{produce}
+candidate questions; stages 4--5 \emph{select} and \emph{verify} them.}
+\label{fig:pipeline}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\caption{Stage-to-module mapping.}
+\label{tab:modules}
+\small
+\begin{tabular}{@{}llp{7.6cm}@{}}
+\toprule
+\textbf{Stage} & \textbf{Module} & \textbf{Responsibility} \\
+\midrule
+1. Ingest        & \mod{ingest.py}    & PDF $\to$ chapter/section/chunk tree with provenance. \\
+2. Index         & \mod{index.py}     & Embed chunks into ChromaDB; top-$k$ retrieval. \\
+3. Generate      & \mod{generate.py}, \mod{bloom.py} & Bloom/difficulty-controlled, RAG-grounded generation. \\
+                 & \mod{llm\_client.py}, \mod{schema.py} & Swappable LLM client; structured-output enforcement; Pydantic schemas. \\
+4. Assemble      & \mod{blueprint.py}, \mod{assemble.py} & Blueprint resolution; greedy / MIP test assembly. \\
+4/5. Dedup       & \mod{similarity.py}, \mod{dedup.py} & Near-duplicate detection (Jaccard / embedding). \\
+5. Validate      & \mod{validate.py}, \mod{textmatch.py} & Schema, blueprint, grounding, duplicate checks. \\
+5. Judge         & \mod{judge.py}     & Optional LLM-as-judge quality rating. \\
+---              & \mod{pipeline.py}, \mod{mock\_client.py} & End-to-end orchestration; offline mock backend. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Data model and contracts}
+\label{sec:schema}
+
+Every artifact is a Pydantic~v2 model (\mod{schema.py}), so the data
+contract is the single source of truth and a JSON~Schema is \emph{exported}
+from it rather than hand-written (they cannot drift). The central type is
+\code{Question}:
+
+\begin{lstlisting}
+class Question(BaseModel):
+    id: str                 # uuid4 hex[:12]
+    chapter: int            # >= 1
+    section: str | None
+    qtype: QuestionType     # mcq | true_false | short_answer | cloze
+    bloom_level: BloomLevel # remember .. create  (revised Bloom, 2001)
+    difficulty: Difficulty  # easy | medium | hard
+    stem: str               # >= 10 chars
+    options: list[str] | None
+    answer: str             # >= 1 char
+    explanation: str        # >= 10 chars
+    source_ref: str         # chunk id(s) grounding this question
+\end{lstlisting}
+
+The three enumerations (\code{QuestionType}, \code{BloomLevel},
+\code{Difficulty}) are reused everywhere, so a tag can never be a free-text
+typo. \code{source\_ref} is what makes the pipeline auditable: it links a
+question back to the exact chunk(s) it was grounded in. A \code{Quiz}
+wraps a list of questions plus the \code{blueprint} dict that produced it,
+so an assembled exam is self-describing and reproducible.
+
+% =====================================================================
+\section{Stage 1 --- Ingestion}
+\label{sec:ingest}
+
+\mod{ingest.py} extracts text from the textbook PDF with PyMuPDF, parses
+the built-in table of contents into a chapter\,$\to$\,section tree, and
+splits each section into overlapping \emph{chunks} of roughly 500--800
+tokens. Each \code{Chunk} carries provenance: \code{chunk\_id},
+\code{chapter\_num}, \code{section\_label}, page range, and token count.
+
+\paragraph{Offline tokenizer fallback.}
+Chunk sizing uses \code{tiktoken}, whose BPE vocabulary is downloaded on
+first use. On an air-gapped machine (or behind a restrictive proxy) that
+download fails, so \code{\_get\_encoder} transparently falls back to a
+\code{\_WordTokenizer} shim that approximates $\sim$1.3 sub-word tokens per
+whitespace word --- accurate enough to drive chunk-size targets without a
+network. This keeps the whole pipeline runnable offline.
+
+% =====================================================================
+\section{Stage 2 --- Vector Index (RAG)}
+\label{sec:index}
+
+\mod{index.py} embeds every chunk with a local sentence-transformers model
+(\code{all-MiniLM-L6-v2}) and stores the vectors in a persistent ChromaDB
+collection with metadata (chapter, section). At generation time, a query
+retrieves the top-$k$ most relevant chunks, which become the grounding
+\emph{context} for the LLM. This is Retrieval-Augmented Generation: the
+model is constrained to write only about what was retrieved, which is what
+makes \code{source\_ref} meaningful and keeps questions on-topic and
+factual.
+
+ChromaDB was chosen because it runs fully locally, persists to disk, and
+supports metadata filtering (so retrieval can be scoped to a specific
+chapter). A lightweight word-overlap \code{check\_grounding} heuristic
+flags any generated answer whose content words do not sufficiently overlap
+the retrieved context.
+
+% =====================================================================
+\section{Stage 3 --- Controlled, grounded generation}
+\label{sec:generate}
+
+This is where the pedagogical control lives. Three concerns are kept in
+separate, auditable places:
+
+\begin{enumerate}[leftmargin=1.6em,nosep]
+  \item \mod{bloom.py} --- \emph{what} to ask for (the cognitive plan).
+  \item \mod{generate.py} --- \emph{how} to ask the model for it (prompts).
+  \item \mod{llm\_client.py} --- \emph{how to force} valid JSON back.
+\end{enumerate}
+
+\subsection{The cognitive plan (\mod{bloom.py})}
+
+\mod{bloom.py} is the single source of truth for prompt-craft. It holds a
+natural-language description of each of the six revised-Bloom levels and
+each difficulty tier, plus one schema-shaped few-shot example per Bloom
+level (\emph{Bloom-aligned prompting}). It then turns a high-level request
+into a concrete, ordered list of \code{QuestionSpec} objects that
+generation must fulfil exactly.
+
+\paragraph{Balanced planning.}
+\code{build\_balanced\_plan(total, \dots)} spreads questions across Bloom
+levels and imposes a target difficulty mix. The arithmetic that makes the
+counts \emph{exact} is the \textbf{largest-remainder (Hamilton)} method:
+
+\begin{equation}
+\text{raw}_k = w_k \cdot N,\quad
+\text{floor}_k = \lfloor \text{raw}_k \rfloor,\quad
+r = N - \!\sum_k \text{floor}_k ,
+\end{equation}
+then the $r$ leftover units are handed to the $k$ with the largest
+fractional remainders $\text{raw}_k - \text{floor}_k$. This guarantees the
+per-level / per-difficulty counts sum to exactly $N$ even when the target
+fractions do not divide evenly --- so ``40/40/20 of 12'' is unambiguous.
+
+\subsection{Prompting and tag coercion (\mod{generate.py})}
+
+\code{generate\_controlled\_for\_chapter} batches the specs \emph{by Bloom
+level}, so each LLM call carries that level's description and few-shot
+example. For each batch it builds a prompt containing: the Bloom guidance,
+the difficulty guidance, the few-shot example, the retrieved grounding
+passages, and an explicit, numbered \code{\#SPEC} block --- one directive
+per requested question:
+
+\begin{lstlisting}[language=]
+#SPEC 1 | bloom=apply | difficulty=medium | qtype=mcq
+#SPEC 2 | bloom=apply | difficulty=hard   | qtype=short_answer
+\end{lstlisting}
+
+\paragraph{Authoritative tagging.}
+Models do not perfectly obey the requested cognitive level. Rather than
+trust the returned \code{bloom\_level}/\code{difficulty}, the code
+\emph{coerces} every returned question to the tag that was requested
+(logging any deviation). This guarantees the pool's distribution matches
+the plan exactly --- the selection stage can then rely on the tags being
+true by construction.
+
+\subsection{Guaranteed-valid JSON (\mod{llm\_client.py})}
+
+\code{LLMClient} wraps any OpenAI-compatible endpoint (GLM, Ollama, vLLM,
+OpenAI) --- switching provider is a \code{.env} edit, nothing else. Schema
+validity is enforced by \code{chat\_schema}, which selects a strategy from
+the \code{STRUCTURED\_OUTPUT\_MODE} setting (Figure~\ref{fig:structured}):
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=6mm and 10mm]
+  \node[ctrl] (mode) {\code{STRUCTURED\_OUTPUT\_MODE}};
+  \node[stage, below left=10mm and 6mm of mode, minimum width=22mm] (js)  {json\_schema\\(strict)};
+  \node[stage, below=10mm of mode, minimum width=22mm] (jo) {json\_object\\(loose)};
+  \node[stage, below right=10mm and 6mm of mode, minimum width=22mm] (ol) {outlines\\(local)};
+  \node[data, below=22mm of mode] (pyd) {Pydantic validation\\(always runs)};
+
+  \draw[arr] (mode) -- (js) node[midway,left,font=\tiny]{};
+  \draw[arr] (mode) -- (jo);
+  \draw[arr] (mode) -- (ol);
+  \draw[arr,densely dashed] (js) to[out=-90,in=160] node[left,font=\tiny,pos=0.4]{fallback}(jo);
+  \draw[arr] (js) -- (pyd);
+  \draw[arr] (jo) -- (pyd);
+  \draw[arr] (ol) -- (pyd);
+\end{tikzpicture}
+\caption{Structured-output strategy. \code{auto} tries provider-enforced
+strict \code{json\_schema} and falls back to loose \code{json\_object};
+\code{outlines} is a hook for local constrained decoding. Pydantic
+validation runs unconditionally --- the schema guarantees JSON \emph{shape},
+never \emph{facts}.}
+\label{fig:structured}
+\end{figure}
+
+\code{auto} (the default) requests provider-enforced strict structured
+output and silently falls back to loose JSON mode if the endpoint does not
+support it; \code{outlines} is an explicit hook for token-masking
+constrained decoding on self-hosted models. In every mode the result is
+re-validated by Pydantic, so a malformed item is dropped, not emitted.
+
+% =====================================================================
+\section{Stage 4 --- Blueprint and Automated Test Assembly}
+\label{sec:assemble}
+
+\subsection{The blueprint (\mod{blueprint.py})}
+
+A \emph{blueprint} is the small YAML file the professor edits. It is
+deliberately separate from generation --- it drives \emph{selection}, not
+\emph{creation}:
+
+\begin{lstlisting}[language=]
+title: "AI-1 Midterm"
+total_questions: 20
+chapters: { 1: "50%", 2: "30%", 3: "20%" }
+difficulty_mix: { easy: 0.4, medium: 0.4, hard: 0.2 }
+allowed_qtypes: [mcq, true_false, short_answer, cloze]
+versions: 2
+selector: mip          # greedy | mip
+dedup_similarity: 0.85
+\end{lstlisting}
+
+Chapter and difficulty quantities accept integer counts, fractions, or
+\code{"NN\%"} strings; \code{Blueprint.resolve()} converts them to exact
+integer counts (again via largest-remainder) summing to
+\code{total\_questions}, so everything downstream is unambiguous.
+
+\subsection{Test assembly as optimisation (\mod{assemble.py})}
+
+Selection is \emph{Automated Test Assembly} (ATA): choose, from the pool,
+the subset(s) of questions that satisfy all blueprint constraints while
+maximising overall quality. Two interchangeable selectors sit behind one
+\code{Selector} interface (chosen by \code{blueprint.selector}):
+
+\begin{description}[leftmargin=1.4em,style=nextline]
+  \item[\code{GreedySelector}] A fast, content-balancing greedy fill.
+  Honours per-chapter counts, respects the difficulty marginal in a
+  two-pass fill (quota first, then remainder), and skips near-duplicates
+  and questions already used in another version. Good baseline; no
+  optimality guarantee.
+  \item[\code{MIPSelector}] A Mixed-Integer Program (PuLP\,/\,CBC) that
+  meets per-chapter \emph{and} difficulty counts exactly, maximises total
+  quality, keeps parallel versions disjoint, and forbids near-duplicate
+  pairs across versions. This is the exact, auditable selection.
+\end{description}
+
+\paragraph{MIP formulation.}
+Let $\mathcal{P}$ be the (qtype-filtered) pool, $V$ the set of versions,
+and $x_{iv}\in\{0,1\}$ indicate that question $i$ is placed in version
+$v$. With per-chapter targets $n_c$, per-difficulty targets $m_d$, a
+quality weight $q_i$, and the set $D$ of near-duplicate pairs:
+
+\begin{align}
+\max \quad & \sum_{v\in V}\sum_{i\in\mathcal{P}} q_i\, x_{iv}
+   &&\text{(maximise total quality)} \label{eq:obj}\\
+\text{s.t.}\quad
+& \sum_{i:\,\text{chap}(i)=c} x_{iv} = n_c
+   && \forall v\in V,\ \forall c \label{eq:chap}\\
+& \sum_{i:\,\text{diff}(i)=d} x_{iv} = m_d
+   && \forall v\in V,\ \forall d \label{eq:diff}\\
+& \sum_{v\in V} x_{iv} \le 1
+   && \forall i\in\mathcal{P} \label{eq:disjoint}\\
+& \sum_{v\in V} x_{iv} + \sum_{v\in V} x_{jv} \le 1
+   && \forall (i,j)\in D \label{eq:dup}
+\end{align}
+
+Constraint~\eqref{eq:chap} fixes the per-chapter blueprint counts;
+\eqref{eq:diff} fixes the difficulty mix; \eqref{eq:disjoint} makes the
+parallel versions \emph{disjoint} (no question reused across versions);
+\eqref{eq:dup} forbids any near-duplicate \emph{pair} from appearing
+anywhere across the assembled set. The objective~\eqref{eq:obj} ranks
+otherwise-feasible selections by a cheap quality proxy
+(\code{question\_quality}: rewards substantive explanations, well-formed
+4-option MCQs, and the more discriminating Bloom levels).
+
+\paragraph{Graceful infeasibility.}
+If the exact program is infeasible for a given pool (e.g.\ the pool lacks
+enough \code{hard} questions in some chapter), the solver \emph{relaxes}
+the difficulty equalities~\eqref{eq:diff}, records
+\code{difficulty\_relaxed} in the diagnostics, and re-solves --- the
+per-chapter counts and totals are never silently violated. Capacity
+warnings are emitted up-front when the pool is too small.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=7mm and 14mm]
+  \node[data] (pool) {tagged pool\\($|\mathcal{P}|$ questions)};
+  \node[ctrl, right=of pool] (bp) {blueprint\\$n_c,\,m_d,\,|V|$};
+  \coordinate (mid) at ($(pool)!0.5!(bp)$);
+  \node[stage, below=10mm of mid, minimum width=40mm] (mip)
+        {MIP: maximise $\sum q_i x_{iv}$\\s.t.\ \eqref{eq:chap}--\eqref{eq:dup}};
+  \node[data, below left=10mm and -6mm of mip] (vA) {Version A};
+  \node[data, below right=10mm and -6mm of mip] (vB) {Version B};
+
+  \draw[arr] (pool) -- (mip);
+  \draw[arr] (bp) -- (mip);
+  \draw[arr] (mip) -- (vA);
+  \draw[arr] (mip) -- (vB);
+  \node[font=\tiny,below=1mm of vA,align=center] {exact counts,\\disjoint, no dups};
+\end{tikzpicture}
+\caption{MIP assembly: one optimisation produces all parallel versions at
+once, guaranteeing they are disjoint and individually blueprint-compliant.}
+\label{fig:mip}
+\end{figure}
+
+% =====================================================================
+\section{Stage 4/5 --- Deduplication}
+\label{sec:dedup}
+
+Near-duplicate questions waste blueprint slots and make parallel versions
+predictable. \mod{similarity.py} provides one API
+(\code{find\_near\_duplicate\_pairs}) with two backends:
+
+\begin{itemize}[nosep,leftmargin=1.4em]
+  \item \textbf{Token-Jaccard} over the canonical question text
+  (stem~+~answer~+~MCQ options) --- dependency-free, always available:
+  \[
+    \mathrm{sim}(q_1,q_2) = \frac{|T(q_1)\cap T(q_2)|}{|T(q_1)\cup T(q_2)|},
+  \]
+  where $T(\cdot)$ is the set of lowercased word tokens.
+  \item \textbf{Embedding cosine} using the sentence-transformers encoder
+  already loaded for RAG, which catches paraphrases the lexical measure
+  misses. Cosine similarity is computed on $L_2$-normalised vectors.
+\end{itemize}
+
+Pairs scoring at/above a threshold are returned as index pairs.
+\mod{dedup.py} drops the later member of each pair (keeping the first
+occurrence) \emph{before} assembly; the assembler additionally forbids any
+surviving near-duplicate pair across versions
+(constraint~\eqref{eq:dup}). The backend degrades gracefully: with no
+encoder available it uses the offline token measure automatically.
+
+% =====================================================================
+\section{Stage 5 --- Validation and judging}
+\label{sec:validate}
+
+\subsection{Validation report (\mod{validate.py})}
+
+\code{validate\_exam} produces a structured report over four dimensions the
+thesis cares about:
+
+\begin{enumerate}[nosep,leftmargin=1.6em]
+  \item \textbf{Schema validity} --- every question round-trips through the
+        \code{Question} model.
+  \item \textbf{Blueprint compliance} --- per-chapter counts, difficulty
+        mix, total, and allowed qtypes match the blueprint \emph{exactly}.
+  \item \textbf{Grounding coverage} --- share of questions traceable to
+        source text (has a \code{source\_ref}; and, when source chunks are
+        supplied, the answer's content words overlap the referenced
+        passage).
+  \item \textbf{Duplicate rate} --- share of questions involved in a
+        near-duplicate pair.
+\end{enumerate}
+
+The overall gate \code{passed} is true only if no schema-invalid items
+exist and (if checked) the blueprint is satisfied. The grounding check
+reuses the dependency-free \code{extract\_content\_words} helper in
+\mod{textmatch.py}; this helper was split out of \mod{index.py} precisely so
+validation does not have to import the heavy vector-index stack.
+
+\subsection{LLM-as-judge (\mod{judge.py}, optional)}
+
+A \emph{separate} model call rates each finished question on four criteria
+--- answerability, correctness of the keyed answer, clarity, and Bloom-level
+match --- on a 1--5 scale, and flags any item whose \emph{minimum} criterion
+falls below a threshold for human review. It is deliberately isolated from
+generation: it only reads finished questions and never rewrites them, so
+``generate'' and ``judge'' stay cleanly separable. It is opt-in; nothing
+else depends on it.
+
+% =====================================================================
+\section{Orchestration and offline operation}
+\label{sec:pipeline}
+
+\mod{pipeline.py} wires the stages into one runnable flow
+(\code{ingest $\to$ index $\to$ generate $\to$ dedup $\to$ assemble $\to$
+validate $\to$ judge}); each stage is imported from its own module, so the
+orchestrator only sequences and reports. Two design choices make the whole
+system runnable with no network --- important for reproducible thesis
+experiments:
+
+\begin{itemize}[nosep,leftmargin=1.4em]
+  \item \mod{mock\_client.py} (\code{MockLLMClient}) is a drop-in
+  \code{LLMClient} replacement that parses the \code{\#SPEC} / \code{\#JUDGE}
+  directives and synthesises deterministic, schema-valid questions and
+  ratings --- no endpoint required (\code{--mock}).
+  \item The index build is best-effort: if embeddings cannot be loaded the
+  pipeline logs a warning and generates without RAG, and dedup/validation
+  fall back to the token backend.
+\end{itemize}
+
+\begin{lstlisting}[language=bash]
+# Full pipeline, fully offline:
+python -m quizgen.pipeline --chapters 1-3 \
+       --blueprint blueprint.yaml --mock --judge
+\end{lstlisting}
+
+% =====================================================================
+\section{Provenance of techniques}
+\label{sec:sources}
+
+The table below states, for each implemented technique, the body of
+literature it draws on. \emph{Honesty note:} the repository contains the
+course textbook but not the cited papers; the citation keys below are the
+standard references for each method as framed in the project brief, and
+\textbf{should be replaced with the exact bibliography entries the thesis
+adopts}. The right-hand column distinguishes ideas taken from the
+literature from project-specific engineering.
+
+\begin{longtable}{@{}p{4.1cm}p{4.3cm}p{4.4cm}@{}}
+\toprule
+\textbf{Implemented in code} & \textbf{Technique / idea} & \textbf{Source lineage} \\
+\midrule
+\endhead
+\mod{pipeline.py} architecture &
+Generate-then-select (over-generate \& select) &
+Established NLG / question-generation pattern; decouples creation from
+constrained selection. \\[2pt]
+\mod{index.py}, RAG prompts in \mod{generate.py} &
+Retrieval-Augmented Generation &
+Lewis et al., \emph{RAG for knowledge-intensive NLP} (2020); grounding
+generation in retrieved context. \\[2pt]
+\code{BloomLevel}, \mod{bloom.py} descriptions \& few-shot &
+Revised Bloom's taxonomy + Bloom-aligned prompting &
+Anderson \& Krathwohl (2001), revising Bloom (1956); levels used to control
+cognitive demand. \\[2pt]
+\code{chat\_schema}, \code{question\_batch\_schema} &
+Structured / constrained decoding &
+JSON-Schema-constrained decoding; Outlines (Willard \& Louf, 2023) for
+token-mask decoding on local models. \\[2pt]
+\mod{assemble.py} (\code{MIPSelector}) &
+Automated Test Assembly as 0--1 MIP &
+van der Linden, \emph{Linear Models for Optimal Test Design} (2005); exam
+assembly as integer programming. \\[2pt]
+\code{question\_quality} objective &
+Coverage / information objective in ATA &
+Objective-weighted selection (van der Linden); here a lightweight quality
+proxy rather than IRT information. \\[2pt]
+\mod{similarity.py} (embedding cosine) &
+Semantic near-duplicate detection &
+Sentence-BERT embeddings (Reimers \& Gurevych, 2019) over MiniLM. \\[2pt]
+\mod{judge.py} &
+LLM-as-judge evaluation &
+Zheng et al., \emph{Judging LLM-as-a-Judge} (2023); model-rated quality with
+human-review flagging. \\[2pt]
+\mod{blueprint.py} &
+Test blueprint / table of specifications &
+Classical assessment design; content $\times$ cognitive-level
+specification driving item selection. \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{Project-specific engineering (not from a paper):}}\\
+\midrule
+\code{\_largest\_remainder} &
+Hamilton / largest-remainder apportionment &
+Standard apportionment arithmetic; ensures integer counts sum exactly. \\[2pt]
+\code{GreedySelector} &
+Greedy content-balanced baseline &
+Engineering baseline to contrast against the MIP. \\[2pt]
+Jaccard fallback, \code{textmatch.py} &
+Lexical token overlap &
+Dependency-free fallbacks for offline operation. \\[2pt]
+\code{MockLLMClient}, \code{\_WordTokenizer} &
+Offline mock backend / tokenizer shim &
+Reproducibility infrastructure; no external model or download needed. \\
+\bottomrule
+\end{longtable}
+
+\paragraph{What ``schema validity'' does and does not guarantee.}
+Throughout, structured-output enforcement guarantees the \emph{shape} of
+the JSON, never the \emph{truth} of its contents. That is precisely why
+grounding (Stage~2/5), tag coercion (Stage~3), exact selection (Stage~4)
+and judging (Stage~5) are all separate, mandatory or opt-in checks rather
+than assumptions baked into the prompt.
+
+% =====================================================================
+\section{Summary}
+
+\code{quizgen} implements a clean separation between \emph{generating} a
+large, tagged, source-grounded pool of candidate questions and
+\emph{selecting} blueprint-compliant exams from it via exact optimisation.
+RAG keeps questions grounded and traceable; Bloom-aligned prompting plus
+authoritative tag coercion give exact pedagogical control; a 0--1 MIP gives
+exact, auditable, multi-version assembly; and a layered validation suite
+(schema, blueprint, grounding, duplicates, optional LLM-judge) verifies the
+result. The system runs end-to-end offline, and swapping the LLM provider
+is a one-line configuration change.
+
+\end{document}
