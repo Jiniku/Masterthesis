@@ -57,6 +57,39 @@ verified against the publisher / ACL Anthology / ERIC record.
 - Mitchell, S., O'Sullivan, M., & Dunning, I. (2011). *PuLP: A Linear Programming Toolkit for Python.* https://github.com/coin-or/pulp
 - Forrest, J., et al. *CBC (COIN-OR Branch and Cut) MILP solver.* https://github.com/coin-or/Cbc
 
+## Recent work & reviews (2020–2026)
+
+The ATA *method* is classical, but the field is active — these place the
+project in the current landscape and keep the bibliography from looking frozen:
+
+- **Fuchimoto, K., & Songmuang, P. (2026).** Review of Automated Parallel Test
+  Form Assembly. *Behaviormetrika, 53*(1). https://doi.org/10.1007/s41237-026-00293-w
+  — recent survey; categorises ATA into MIP, multi-form MIP, metaheuristics,
+  and form-maximisation. quizgen's `MIPSelector` sits in the (multi-form) MIP
+  category.
+- **Ignjatović et al. (2021).** A Survey on Problem Formulations and
+  (Meta)Heuristic-Based Solutions in Automated Assembly of Parallel Test Forms.
+  *IJSEKE, 31*(8). https://doi.org/10.1142/S0218194021500376
+- **Luo (2020)** and **Krohne et al. (2021, eatATA)** — listed above; both are
+  recent MIP-ATA references directly comparable to the implementation.
+- **Boekkooi-Timminga (1990).** The Construction of Parallel Tests from
+  IRT-Based Item Banks. *J. Educational Statistics, 15*(2), 129–145. — parallel
+  forms background.
+- **Related LLM-era work (contrast):** *Automated Test Generation and Marking
+  Using LLMs.* *Electronics, 14*(14), 2835 (2025).
+  https://www.mdpi.com/2079-9292/14/14/2835 — generation + grading; complements
+  quizgen, which is selection-only.
+
+## Why the core citations are old (and why that's fine)
+
+Modelling test assembly as a 0–1 integer program was **defined** by Theunissen
+(1985) and the van der Linden line, and the standard textbook treatment is
+van der Linden (2005). Newer papers *reuse* that formulation rather than
+replace it — the same way shortest-path work still cites Dijkstra. So citing
+the 1985–2008 sources for the *method* is correct; the 2020–2026 entries above
+show it remains an active research area. The implemented `MIPSelector` is the
+classical, non-IRT core of exactly this line of work.
+
 ## Notes on use
 
 - **Core vs. supporting.** The van der Linden line (2005, 1989, 1998), Theunissen
