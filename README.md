@@ -159,16 +159,23 @@ title: "AI-1 Midterm Exam"
 total_questions: 20
 chapters: { 1: "50%", 2: "30%", 3: "20%" }      # how to split across chapters
 difficulty_mix: { easy: 0.4, medium: 0.4, hard: 0.2 }
+qtype_mix: { mcq: 0.4, true_false: 0.2, short_answer: 0.2, cloze: 0.2 }
 allowed_qtypes: [mcq, true_false, short_answer, cloze]
 versions: 2                # how many parallel papers
 selector: mip              # "mip" (exact) or "greedy" (fast) — see below
 dedup_similarity: 0.85     # how similar counts as a "duplicate" (0–1)
 ```
 
-- Chapter and difficulty amounts can be **exact counts** (`10`), **fractions**
-  (`0.5`), or **percentages** (`"50%"`). quizgen converts them to whole numbers
-  that add up to `total_questions` exactly.
+- Chapter, difficulty, and question-type amounts can be **exact counts** (`10`),
+  **fractions** (`0.5`), or **percentages** (`"50%"`). quizgen converts them to
+  whole numbers that add up to `total_questions` exactly.
 - `versions: 2` produces two papers that **share no questions**.
+- **`qtype_mix` pins the format balance** (here 8 mcq / 4 true_false / 4
+  short_answer / 4 cloze). **Leave it out and the exam tends to come out all
+  multiple-choice** — the optimiser prefers MCQs because they score highest, so
+  set `qtype_mix` when you want a spread of formats. (This is different from
+  `allowed_qtypes`, which only says which formats are *permitted*, not how many
+  of each.)
 
 ---
 
@@ -192,7 +199,8 @@ python -m quizgen --pool questions.example.json \
 | `--total` | total questions per version | `--total 20` |
 | `--chapters` | per-chapter split | `--chapters 1:10,2:6,3:4` or `1:50%,2:30%,3:20%` |
 | `--difficulty` | easy/medium/hard mix | `--difficulty 0.4,0.4,0.2` |
-| `--qtypes` | allowed question types | `--qtypes mcq,short_answer` |
+| `--qtypes` | allowed question types (filter) | `--qtypes mcq,short_answer` |
+| `--qtype-mix` | target question-type mix (counts) | `--qtype-mix mcq:0.4,true_false:0.2,short_answer:0.2,cloze:0.2` |
 | `--versions` | number of papers | `--versions 2` |
 | `--selector` | `greedy` or `mip` | `--selector mip` |
 | `--dedup` | remove duplicate questions first | *(on/off)* |

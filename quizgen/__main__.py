@@ -102,6 +102,32 @@ def parse_qtypes(spec: str) -> list[str]:
     return types
 
 
+def parse_qtype_mix(spec: str) -> dict[str, float]:
+    """Parse a question-type mix into a ``{qtype: fraction}`` mapping.
+
+    Takes named pairs, e.g. ``'mcq:0.4,true_false:0.2,short_answer:0.2,cloze:0.2'``
+    or with percentages ``'mcq:40%,true_false:20%,...'``. Type names are
+    validated against :class:`~quizgen.schema.QuestionType`.
+    """
+    valid = {t.value for t in QuestionType}
+    mix: dict[str, float] = {}
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if ":" not in part:
+            raise ValueError(
+                "qtype mix must use 'name:value' pairs, e.g. 'mcq:0.4,cloze:0.2'"
+            )
+        key, _, val = part.partition(":")
+        key = key.strip()
+        if key not in valid:
+            raise ValueError(f"unknown qtype '{key}'; valid: {sorted(valid)}")
+        val = val.strip()
+        mix[key] = float(val[:-1]) / 100.0 if val.endswith("%") else float(val)
+    return mix
+
+
 # ── Blueprint construction (YAML defaults + flag overrides) ─────────
 
 
@@ -125,6 +151,8 @@ def build_blueprint(args: argparse.Namespace) -> Blueprint:
         data["difficulty_mix"] = parse_difficulty_mix(args.difficulty)
     if args.qtypes is not None:
         data["allowed_qtypes"] = parse_qtypes(args.qtypes)
+    if args.qtype_mix is not None:
+        data["qtype_mix"] = parse_qtype_mix(args.qtype_mix)
     if args.versions is not None:
         data["versions"] = args.versions
     if args.selector is not None:
@@ -160,6 +188,8 @@ def _build_parser() -> argparse.ArgumentParser:
     g.add_argument("--difficulty", default=None,
                    help="Difficulty mix, e.g. '0.4,0.4,0.2' or 'easy:0.4,medium:0.4,hard:0.2'")
     g.add_argument("--qtypes", default=None, help="Allowed types, e.g. 'mcq,short_answer'")
+    g.add_argument("--qtype-mix", default=None,
+                   help="Target type mix, e.g. 'mcq:0.4,true_false:0.2,short_answer:0.2'")
     g.add_argument("--versions", type=int, default=None, help="Number of parallel versions")
     g.add_argument("--selector", choices=["greedy", "mip"], default=None, help="Selection method")
     g.add_argument("--dedup-similarity", type=float, default=None,
@@ -193,6 +223,8 @@ def main() -> None:
     print(f"   Total/version: {resolved['total_questions']}")
     print(f"   Per chapter:   {resolved['chapter_counts']}")
     print(f"   Difficulty:    {resolved['difficulty_counts']}")
+    if resolved.get("qtype_counts"):
+        print(f"   Q-types:       {resolved['qtype_counts']}")
     print(f"   Versions:      {resolved['versions']}   Selector: {blueprint.selector}")
     print(f"   Pool size:     {len(pool)}")
 
@@ -212,6 +244,8 @@ def main() -> None:
     result = assemble(pool, blueprint)
     for w in result.diagnostics.get("capacity_warnings", []):
         print(f"   ⚠ {w}")
+    if result.diagnostics.get("qtype_relaxed"):
+        print("   ⚠ question-type constraints relaxed to reach a feasible selection")
     if result.diagnostics.get("difficulty_relaxed"):
         print("   ⚠ difficulty constraints relaxed to reach a feasible selection")
 
@@ -255,9 +289,11 @@ def _print_version_report(quiz, n: int) -> None:
 
     chap = Counter(q.chapter for q in quiz.questions)
     diff = Counter(q.difficulty.value for q in quiz.questions)
+    qty = Counter(q.qtype.value for q in quiz.questions)
     print(f"\n   ── Version {chr(64 + n)} ({len(quiz.questions)} questions) ──")
     print(f"      Per chapter: {dict(sorted(chap.items()))}")
     print(f"      Difficulty:  {dict(diff)}")
+    print(f"      Q-types:     {dict(qty)}")
 
 
 def _version_compliant(quiz, blueprint: Blueprint) -> bool:

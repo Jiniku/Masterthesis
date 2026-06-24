@@ -15,9 +15,10 @@ from quizgen.__main__ import (
     build_blueprint,
     parse_chapter_counts,
     parse_difficulty_mix,
+    parse_qtype_mix,
     parse_qtypes,
 )
-from quizgen.schema import Difficulty
+from quizgen.schema import Difficulty, QuestionType
 
 # ── Flag parsers ────────────────────────────────────────────────────
 
@@ -45,6 +46,22 @@ class TestParsers:
         with pytest.raises(ValueError):
             parse_qtypes("essay")
 
+    def test_qtype_mix_named(self):
+        assert parse_qtype_mix("mcq:0.4,true_false:0.2,short_answer:0.2,cloze:0.2") == {
+            "mcq": 0.4, "true_false": 0.2, "short_answer": 0.2, "cloze": 0.2,
+        }
+
+    def test_qtype_mix_percentages(self):
+        assert parse_qtype_mix("mcq:50%,cloze:50%") == {"mcq": 0.5, "cloze": 0.5}
+
+    def test_qtype_mix_invalid_type_rejected(self):
+        with pytest.raises(ValueError):
+            parse_qtype_mix("essay:0.5,mcq:0.5")
+
+    def test_qtype_mix_requires_named_pairs(self):
+        with pytest.raises(ValueError):
+            parse_qtype_mix("0.4,0.2,0.2,0.2")
+
 
 # ── Blueprint construction & override precedence ────────────────────
 
@@ -52,7 +69,7 @@ class TestParsers:
 def _args(**over) -> argparse.Namespace:
     base = dict(
         blueprint=None, title=None, total=None, chapters=None, difficulty=None,
-        qtypes=None, versions=None, selector=None, dedup_similarity=None,
+        qtypes=None, qtype_mix=None, versions=None, selector=None, dedup_similarity=None,
     )
     base.update(over)
     return argparse.Namespace(**base)
@@ -90,3 +107,11 @@ class TestBuildBlueprint:
     def test_missing_total_errors(self):
         with pytest.raises(ValueError):
             build_blueprint(_args(selector="mip"))
+
+    def test_qtype_mix_override(self):
+        bp = build_blueprint(_args(
+            total=20, qtype_mix="mcq:0.4,true_false:0.2,short_answer:0.2,cloze:0.2",
+        ))
+        counts = {q.value: c for q, c in bp.resolve_qtype_counts().items()}
+        assert counts == {"mcq": 8, "true_false": 4, "short_answer": 4, "cloze": 4}
+        assert QuestionType.MCQ in bp.resolve_qtype_counts()

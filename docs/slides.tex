@@ -326,7 +326,7 @@ title: "AI-1 Midterm Exam"
 total_questions: 20
 chapters: { 1: "50%", 2: "30%", 3: "20%" }
 difficulty_mix: { easy: 0.4, medium: 0.4, hard: 0.2 }
-allowed_qtypes: [mcq, true_false, short_answer, cloze]
+qtype_mix: { mcq: 0.4, true_false: 0.2, short_answer: 0.2, cloze: 0.2 }
 versions: 2
 selector: mip            # greedy | mip
 dedup_similarity: 0.85
@@ -334,6 +334,8 @@ dedup_similarity: 0.85
   \begin{itemize}
     \item Amounts may be \textbf{exact counts} (\code{10}), \textbf{fractions}
           (\code{0.4}), or \textbf{percentages} (\code{"50\%"}).
+    \item \code{qtype\_mix} pins the \textbf{format balance} — without it the
+          exam tends to come out \textbf{all MCQ} (MCQs score highest).
     \item \code{versions: 2} $\Rightarrow$ two papers that \textbf{share no question}.
   \end{itemize}
 \end{frame}
@@ -539,6 +541,8 @@ For each version:
       && \forall c\in C,\;\forall v\in V \\[1mm]
     \text{exact difficulty counts:}\quad & \sum_{i\in Q_l} x_{iv}=m_l
       && \forall l\in L,\;\forall v\in V \\[1mm]
+    \text{exact question-type counts:}\quad & \sum_{i\in Q_p} x_{iv}=k_p
+      && \forall p\in P,\;\forall v\in V \\[1mm]
     \text{disjoint versions:}\quad & \sum_{v\in V} x_{iv}\le 1
       && \forall i \\[1mm]
     \text{no near-duplicate pair:}\quad & \sum_{v\in V}x_{iv}+\sum_{v\in V}x_{jv}\le 1
@@ -558,16 +562,18 @@ For each version:
 
   \vspace{2mm}
   \begin{enumerate}
-    \item Try the full model (chapter + difficulty + disjoint + duplicate).
-    \item If infeasible, \textbf{drop the difficulty equalities} and re-solve —
-          keeping chapter counts, version disjointness, and duplicate exclusions.
+    \item Try the full model (chapter + difficulty + qtype + disjoint + duplicate).
+    \item If infeasible, \textbf{drop the question-type equalities} and re-solve.
+    \item If still infeasible, also \textbf{drop the difficulty equalities} —
+          always keeping chapter counts, disjointness, and duplicate exclusions.
   \end{enumerate}
 
   \vspace{2mm}
-  \begin{block}{Deliberate asymmetry}
-    Chapter coverage is the \textbf{core content requirement} and is never
-    silently violated. Difficulty balance is the \textbf{safer constraint to
-    relax} — the run records \code{difficulty\_relaxed} in its diagnostics.
+  \begin{block}{Deliberate priority}
+    Chapter coverage is the \textbf{core requirement}, never violated. Then
+    difficulty, then question-type mix as the \textbf{softest} — relaxed first.
+    The run records \code{qtype\_relaxed} / \code{difficulty\_relaxed} in
+    diagnostics.
   \end{block}
 \end{frame}
 

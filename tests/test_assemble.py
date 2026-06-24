@@ -48,6 +48,38 @@ def _make_pool() -> list[Question]:
     return pool
 
 
+def _make_mixed_pool() -> list[Question]:
+    """A pool spanning all 3 chapters × 4 qtypes × 3 difficulties (rich enough
+    to satisfy joint chapter/difficulty/qtype constraints for two versions)."""
+    blooms = list(BloomLevel)
+    diffs = [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD]
+    pool: list[Question] = []
+    n = 0
+    for chapter in (1, 2, 3):
+        for qt in QuestionType:
+            for diff in diffs:
+                for k in range(6):
+                    is_mcq = qt is QuestionType.MCQ
+                    pool.append(
+                        Question(
+                            id=f"q{n:04d}",
+                            chapter=chapter,
+                            section=f"{chapter}.{k % 3 + 1}",
+                            qtype=qt,
+                            bloom_level=blooms[n % len(blooms)],
+                            difficulty=diff,
+                            stem=f"Chapter {chapter} {qt.value} item {n} on unique subject {n}.",
+                            options=[f"A) opt{n}", "B) two", "C) three", "D) four"]
+                            if is_mcq else None,
+                            answer="A" if is_mcq else f"answer text {n}",
+                            explanation=f"Explanation {n} grounded in chapter {chapter}.",
+                            source_ref=f"ch{chapter}_{qt.value}_{n:04d}",
+                        )
+                    )
+                    n += 1
+    return pool
+
+
 def _blueprint(**over) -> Blueprint:
     base = dict(
         title="Test Exam",
@@ -136,6 +168,61 @@ class TestMIPSelector:
         a = {q.id for q in result.versions[0]}
         b = {q.id for q in result.versions[1]}
         assert a.isdisjoint(b)
+
+
+def _assert_qtype_compliant(versions, bp):
+    expected = {q.value: c for q, c in bp.resolve_qtype_counts().items()}
+    for qs in versions:
+        got = Counter(q.qtype.value for q in qs)
+        for t, need in expected.items():
+            assert got.get(t, 0) == need
+
+
+class TestQtypeMix:
+    def test_resolve_qtype_counts(self):
+        bp = _blueprint(
+            qtype_mix={"mcq": 0.5, "true_false": 0.25, "short_answer": 0.25},
+            total_questions=20,
+        )
+        counts = {k.value: v for k, v in bp.resolve_qtype_counts().items()}
+        assert counts == {"mcq": 10, "true_false": 5, "short_answer": 5}
+
+    def test_qtype_counts_sum_to_total(self):
+        bp = _blueprint(
+            qtype_mix={"mcq": 0.4, "true_false": 0.2, "short_answer": 0.2, "cloze": 0.2},
+            total_questions=17,
+        )
+        assert sum(bp.resolve_qtype_counts().values()) == 17
+
+    def test_no_qtype_mix_is_empty(self):
+        assert _blueprint().resolve_qtype_counts() == {}
+
+    def test_mip_meets_qtype_counts_exactly(self):
+        bp = _blueprint(
+            selector="mip",
+            qtype_mix={"mcq": 0.4, "true_false": 0.2, "short_answer": 0.2, "cloze": 0.2},
+        )
+        result = MIPSelector().select(_make_mixed_pool(), bp)
+        _assert_compliant(result.versions, bp)
+        _assert_qtype_compliant(result.versions, bp)
+        assert result.diagnostics.get("solver_status") == "Optimal"
+        assert not result.diagnostics.get("qtype_relaxed")
+
+    def test_greedy_meets_qtype_counts(self):
+        bp = _blueprint(
+            selector="greedy",
+            qtype_mix={"mcq": 0.4, "true_false": 0.2, "short_answer": 0.2, "cloze": 0.2},
+        )
+        result = GreedySelector().select(_make_mixed_pool(), bp)
+        _assert_compliant(result.versions, bp)
+        _assert_qtype_compliant(result.versions, bp)
+
+    def test_mip_without_qtype_mix_skips_constraint(self):
+        # With an all-MCQ pool and no qtype_mix, assembly still succeeds.
+        bp = _blueprint(selector="mip")
+        result = MIPSelector().select(_make_pool(), bp)
+        _assert_compliant(result.versions, bp)
+        assert "qtype_relaxed" not in result.diagnostics
 
 
 class TestAssembleFactory:

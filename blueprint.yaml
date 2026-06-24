@@ -1,6 +1,6 @@
 # Exam blueprint — the professor edits THIS file to drive Automated Test
-# Assembly. Generation (the LLM) produces a large tagged pool; this blueprint
-# selects the subset that becomes the exam(s).
+# Assembly. You bring a large tagged pool of questions; this blueprint selects
+# the subset that becomes the exam(s).
 #
 # Run:  python -m quizgen.assemble --blueprint blueprint.yaml --pool pool.json --out exam.json
 
@@ -29,6 +29,17 @@ allowed_qtypes:
   - true_false
   - short_answer
   - cloze
+
+# Target question-type mix (resolved to counts: 8 mcq / 4 true_false /
+# 4 short_answer / 4 cloze). Without this, the optimiser is free to fill every
+# slot with whichever type scores highest (typically all MCQ); this pins the
+# format balance the same way difficulty_mix pins the difficulty balance.
+# Omit / leave empty to impose no type-distribution constraint.
+qtype_mix:
+  mcq: 0.4
+  true_false: 0.2
+  short_answer: 0.2
+  cloze: 0.2
 
 # How many parallel, non-overlapping exam versions to produce.
 versions: 2

@@ -41,6 +41,8 @@ class ValidationReport:
     chapter_expected: dict[int, int] = field(default_factory=dict)
     difficulty_counts: dict[str, int] = field(default_factory=dict)
     difficulty_expected: dict[str, int] = field(default_factory=dict)
+    qtype_counts: dict[str, int] = field(default_factory=dict)
+    qtype_expected: dict[str, int] = field(default_factory=dict)
     blueprint_issues: list[str] = field(default_factory=list)
 
     traceable_share: float = 0.0
@@ -132,6 +134,12 @@ def _check_blueprint(report: ValidationReport, questions, blueprint) -> None:
         d.value: c for d, c in blueprint.resolve_difficulty_counts().items()
     }
 
+    qty = Counter(q.qtype.value for q in questions)
+    report.qtype_counts = dict(qty)
+    report.qtype_expected = {
+        q.value: c for q, c in blueprint.resolve_qtype_counts().items()
+    }
+
     issues: list[str] = []
     if len(questions) != blueprint.total_questions:
         issues.append(
@@ -146,6 +154,12 @@ def _check_blueprint(report: ValidationReport, questions, blueprint) -> None:
             if report.difficulty_counts.get(d, 0) != need:
                 issues.append(
                     f"difficulty '{d}' {report.difficulty_counts.get(d, 0)} != {need}"
+                )
+    if report.qtype_expected:
+        for t, need in report.qtype_expected.items():
+            if report.qtype_counts.get(t, 0) != need:
+                issues.append(
+                    f"qtype '{t}' {report.qtype_counts.get(t, 0)} != {need}"
                 )
     if blueprint.allowed_qtypes:
         allowed = {q.value for q in blueprint.allowed_qtypes}
@@ -209,6 +223,10 @@ def report_to_markdown(report: ValidationReport, title: str = "Exam Validation R
         lines.append(
             f"- Difficulty (got → expected): {r.difficulty_counts} → {r.difficulty_expected}"
         )
+        if r.qtype_expected:
+            lines.append(
+                f"- Q-types (got → expected): {r.qtype_counts} → {r.qtype_expected}"
+            )
         for issue in r.blueprint_issues:
             lines.append(f"  - ⚠ {issue}")
     lines.append("")

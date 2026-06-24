@@ -2,15 +2,15 @@
 
 A *blueprint* is the small YAML file a professor edits to specify what the
 final exam(s) must look like: how many questions in total, how they split
-across chapters, the target difficulty mix, which question types are allowed,
-and how many parallel versions to assemble.  It is deliberately separate from
-the (LLM-driven) generation step — the generator produces a large tagged
-*pool*; the blueprint drives the *selection* (Automated Test Assembly).
+across chapters, the target difficulty mix, the target question-type mix,
+which question types are allowed, and how many parallel versions to assemble.
+It drives the *selection* of questions from an existing tagged *pool*
+(Automated Test Assembly); there is no question generation step.
 
-Chapter and difficulty quantities may be given as integer counts, fractions
-(``0.5``) or percentages (``"50%"``); :meth:`Blueprint.resolve` converts them
-into exact integer counts that sum to ``total_questions`` using the
-largest-remainder method, so the blueprint is unambiguous downstream.
+Chapter, difficulty, and question-type quantities may be given as integer
+counts, fractions (``0.5``) or percentages (``"50%"``); :meth:`Blueprint.resolve`
+converts them into exact integer counts that sum to ``total_questions`` using
+the largest-remainder method, so the blueprint is unambiguous downstream.
 """
 
 from __future__ import annotations
@@ -92,6 +92,10 @@ class Blueprint(BaseModel):
     # Restrict the question formats that may be selected. Empty = all allowed.
     allowed_qtypes: list[QuestionType] = Field(default_factory=list)
 
+    # Target question-type mix (fractions or percentages). Empty = no constraint
+    # on the type distribution (only ``allowed_qtypes`` filtering applies).
+    qtype_mix: dict[str, float | str] = Field(default_factory=dict)
+
     versions: int = Field(default=1, ge=1)
     selector: str = Field(default="greedy")  # "greedy" | "mip"
 
@@ -132,6 +136,26 @@ class Blueprint(BaseModel):
         mix = {k: _as_fraction(v) for k, v in self.difficulty_mix.items()}
         return build_difficulty_plan(self.total_questions, mix)
 
+    def resolve_qtype_counts(self) -> dict[QuestionType, int]:
+        """Resolve the question-type mix into integer counts summing to total.
+
+        Like the difficulty mix, this uses the largest-remainder method so the
+        per-type counts always sum to ``total_questions`` exactly.  Returns an
+        empty mapping when no ``qtype_mix`` is specified (no type constraint).
+        """
+        if not self.qtype_mix:
+            return {}
+        norm: dict[QuestionType, float] = {}
+        for key, value in self.qtype_mix.items():
+            qt = key if isinstance(key, QuestionType) else QuestionType(str(key))
+            frac = _as_fraction(value)
+            if frac > 0:
+                norm[qt] = frac
+        weight_sum = sum(norm.values()) or 1.0
+        return _largest_remainder(
+            {q: w / weight_sum for q, w in norm.items()}, self.total_questions
+        )
+
     def resolve(self) -> dict[str, Any]:
         """Return a fully-resolved, JSON-serialisable view of the blueprint."""
         return {
@@ -140,6 +164,9 @@ class Blueprint(BaseModel):
             "chapter_counts": self.resolve_chapter_counts(),
             "difficulty_counts": {
                 d.value: n for d, n in self.resolve_difficulty_counts().items()
+            },
+            "qtype_counts": {
+                q.value: n for q, n in self.resolve_qtype_counts().items()
             },
             "allowed_qtypes": [q.value for q in self.allowed_qtypes],
             "versions": self.versions,

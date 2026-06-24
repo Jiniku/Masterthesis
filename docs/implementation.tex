@@ -256,11 +256,22 @@ title: "AI-1 Midterm Exam"
 total_questions: 20
 chapters: { 1: "50%", 2: "30%", 3: "20%" }
 difficulty_mix: { easy: 0.4, medium: 0.4, hard: 0.2 }
+qtype_mix: { mcq: 0.4, true_false: 0.2, short_answer: 0.2, cloze: 0.2 }
 allowed_qtypes: [mcq, true_false, short_answer, cloze]
 versions: 2
 selector: mip            # greedy | mip
 dedup_similarity: 0.85
 \end{lstlisting}
+
+The \code{qtype\_mix} field is the question-type analogue of
+\code{difficulty\_mix}: it pins how many of each format the exam must contain.
+It is distinct from \code{allowed\_qtypes}, which only \emph{filters} which
+formats are permitted. Without a \code{qtype\_mix}, the type distribution is
+left free, and because the quality objective (Section~\ref{sec:algorithm-deep-dive})
+rewards well-formed multiple-choice items, the optimiser tends to fill every
+free slot with MCQs. Specifying \code{qtype\_mix} makes the format balance an
+exact constraint, resolved to integer counts by the same largest-remainder
+method (here $8$ MCQ, $4$ true/false, $4$ short-answer, $4$ cloze).
 
 \subsection{Resolving human-friendly proportions into exact counts}
 
@@ -403,8 +414,9 @@ exam versions.}
 The first stage converts the professor's rule file into exact numbers. For the
 example blueprint in Section~\ref{sec:blueprint}, every version must contain
 20 questions: 10 from Chapter~1, 6 from Chapter~2, and 4 from Chapter~3. It
-must also contain 8 easy, 8 medium, and 4 hard questions. These numbers are the
-quotas used by both selectors.
+must also contain 8 easy, 8 medium, and 4 hard questions, and---when a
+\code{qtype\_mix} is given---8 MCQ, 4 true/false, 4 short-answer, and 4 cloze
+questions. These numbers are the quotas used by both selectors.
 
 This separation matters: after quota resolution, the rest of the pipeline does
 not need to remember whether the professor wrote \code{"50\%"}, \code{0.5}, or
@@ -578,6 +590,8 @@ $C$ & Chapter set & Chapters appearing in the blueprint. \\
 $n_c$ & Chapter quota & Required number of questions from chapter $c$. \\
 $L$ & Difficulty set & Easy, medium, and hard. \\
 $m_l$ & Difficulty quota & Required number of questions at difficulty level $l$. \\
+$P$ & Question-type set & Types in the blueprint's \code{qtype\_mix}. \\
+$k_p$ & Question-type quota & Required number of questions of type $p$. \\
 $D$ & Duplicate-pair set & Pairs of questions that are too similar. \\
 \bottomrule
 \end{tabular}
@@ -646,6 +660,23 @@ questions. These constraints interact with the chapter constraints: a selected
 question simultaneously counts toward one chapter quota and one difficulty
 quota.
 
+\subsubsection{Constraint 2b: exact question-type counts}
+
+When the blueprint specifies a \code{qtype\_mix}, every version must also match
+the resolved per-type quota. For every type $p$ and every version $v$,
+\begin{equation}
+  \sum_{i\in Q_p} x_{iv}=k_p
+  \qquad \forall p\in P,\;\forall v\in V,
+  \label{eq:deep-qtype}
+\end{equation}
+where $Q_p$ is the set of questions of type $p$. In the running example each
+version must contain exactly $8$ MCQ, $4$ true/false, $4$ short-answer, and $4$
+cloze questions. This constraint is what prevents the optimiser from filling the
+exam with the highest-scoring format (typically MCQ); it is the question-type
+counterpart of the difficulty constraint and interacts with both the chapter
+and difficulty quotas, since each selected question counts toward one quota of
+each kind.
+
 \subsubsection{Constraint 3: disjoint versions}
 
 No exact question may appear in more than one version:
@@ -691,13 +722,15 @@ Putting the pieces together, the model is
 \text{s.t.}\quad
 & \sum_{i\in Q_c}x_{iv}=n_c && \forall c\in C,\;\forall v\in V, \\
 & \sum_{i\in Q_l}x_{iv}=m_l && \forall l\in L,\;\forall v\in V, \\
+& \sum_{i\in Q_p}x_{iv}=k_p && \forall p\in P,\;\forall v\in V, \\
 & \sum_{v\in V}x_{iv}\leq 1 && \forall i, \\
 & \sum_{v\in V}x_{iv}+\sum_{v\in V}x_{jv}\leq 1 && \forall(i,j)\in D, \\
 & x_{iv}\in\{0,1\} && \forall i,\;\forall v\in V.
 \end{align}
 In plain terms, the solver finds the highest-quality selection such that each
-version has the required chapter coverage, the desired difficulty mix, no exact
-question overlap, and no near-duplicate overlap.
+version has the required chapter coverage, the desired difficulty mix, the
+desired question-type mix, no exact question overlap, and no near-duplicate
+overlap.
 
 \subsubsection{How the solver searches}
 
@@ -723,18 +756,21 @@ questions remain after type filtering and near-duplicate blocking. The
 implementation handles this with a two-phase solve:
 
 \begin{enumerate}[leftmargin=1.6em]
-  \item Try the full model with chapter, difficulty, disjointness, and
-        duplicate-pair constraints.
-  \item If no optimal feasible solution exists, remove the difficulty
-        equalities and solve again while keeping chapter counts, version
-        disjointness, and duplicate exclusions.
+  \item Try the full model with chapter, difficulty, question-type,
+        disjointness, and duplicate-pair constraints.
+  \item If no optimal feasible solution exists, remove the question-type
+        equalities and solve again, keeping everything else.
+  \item If it is still infeasible, additionally remove the difficulty
+        equalities, keeping chapter counts, version disjointness, and duplicate
+        exclusions.
 \end{enumerate}
 
-When the second phase is used, the diagnostics record
-\code{difficulty\_relaxed}. This is intentionally asymmetric. Chapter coverage
-is treated as the core content requirement and is never silently violated;
-difficulty balance is important, but it is the safer constraint to relax when
-the pool is undersupplied.
+The relaxations are recorded in the diagnostics as \code{qtype\_relaxed} and
+\code{difficulty\_relaxed}. The ordering encodes a deliberate priority:
+chapter coverage is the core content requirement and is never silently
+violated; difficulty balance is next; and the question-type mix is the softest
+constraint, relaxed first when the pool is undersupplied. This keeps the most
+pedagogically important guarantees intact for as long as the pool allows.
 
 \subsection{Greedy and MIP comparison}
 
