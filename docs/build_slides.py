@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Build quizgen_slides.pptx — a 'how it works' deck for the quizgen project.
 
-Run:  python build_slides.py  (writes docs/quizgen_slides.pptx)
+quizgen is a selection-only tool: it assembles blueprint-compliant exams from
+an existing question bank (no generation, no LLM, no PDF ingestion).
+
+Run:  python build_slides.py   (writes docs/quizgen_slides.pptx)
 """
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -134,323 +137,249 @@ band.shadow.inherit = False
 textbox(s, Inches(0.8), Inches(2.0), Inches(11.7), Inches(1.2),
         "quizgen", size=66, color=WHITE, bold=True)
 textbox(s, Inches(0.85), Inches(3.25), Inches(11.7), Inches(1.3),
-        "Automated exam & quiz generation from a textbook\n"
-        "A generate-then-select pipeline", size=26, color=BLUEL)
+        "Automated Test Assembly from a question bank\n"
+        "Select blueprint-compliant exams — no generation, no LLM",
+        size=26, color=BLUEL)
 textbox(s, Inches(0.85), Inches(5.0), Inches(11.7), Inches(1.4),
-        "RAG grounding   •   Bloom-controlled generation   •   "
-        "Automated Test Assembly (MIP)\nMaster's Thesis — KWARC Group, FAU "
+        "Question bank (JSON)   •   Blueprint (YAML + flags)   •   "
+        "Greedy / MIP selection\nMaster's Thesis — KWARC Group, FAU "
         "Erlangen-Nürnberg", size=16, color=WHITE)
 
 # ══════════════════════════════════════════════════════════════════════
 # 2 — THE IDEA
 # ══════════════════════════════════════════════════════════════════════
 s = slide()
-header(s, "The core idea: generate, then select", "WHY THIS ARCHITECTURE")
-textbox(s, Inches(0.55), Inches(1.35), Inches(12.2), Inches(0.7),
-        "Don't ask one prompt to write \"the exam\". Split the job into two "
-        "stages with very different failure modes.", size=18, italic=True, color=GREY)
+header(s, "Selection as exact optimisation", "WHAT THE TOOL DOES")
+textbox(s, Inches(0.55), Inches(1.35), Inches(12.2), Inches(0.8),
+        "You bring a bank of tagged questions. quizgen picks the exam that "
+        "matches the professor's blueprint — exactly.", size=18, italic=True, color=GREY)
 
-box(s, Inches(0.7), Inches(2.3), Inches(5.5), Inches(1.0),
-    "GENERATE  →  over-produce a large, tagged, source-grounded POOL of candidates",
-    BLUEL, BLUE, DARK, size=15)
-box(s, Inches(7.1), Inches(2.3), Inches(5.5), Inches(1.0),
-    "SELECT  →  pick the optimal subset matching the professor's BLUEPRINT",
+box(s, Inches(0.7), Inches(2.35), Inches(5.3), Inches(1.0),
+    "INPUT  ·  question bank (JSON) with metadata + a blueprint",
     GREENL, GREEN, DARK, size=15)
-arrow(s, Inches(6.2), Inches(2.8), Inches(7.1), Inches(2.8), GREY, 2.5)
+box(s, Inches(7.3), Inches(2.35), Inches(5.3), Inches(1.0),
+    "OUTPUT  ·  one or more disjoint, blueprint-compliant exam versions",
+    BLUEL, BLUE, DARK, size=15)
+arrow(s, Inches(6.0), Inches(2.85), Inches(7.3), Inches(2.85), GREY, 2.5)
 
-bullets(s, Inches(0.7), Inches(3.7), Inches(12), Inches(3.2), [
-    "Creative & stochastic generation is decoupled from exact constraint satisfaction.",
-    "Auditability — every question traces to a source chunk; every exam traces to a blueprint.",
-    "Exact constraints — selection is solved with a Mixed-Integer Program, not coaxed from a prompt.",
-    "Reusability — one pool yields many exams and parallel versions.",
-    "Separable evaluation — grounding, dedup, schema validation & LLM-judge act on finished artifacts.",
+bullets(s, Inches(0.7), Inches(3.75), Inches(12), Inches(3.1), [
+    "Hitting counts exactly (per chapter, per difficulty, N versions) is a "
+    "combinatorial optimisation problem — not a prompting problem.",
+    "Solved with a 0–1 Mixed-Integer Program: exact, auditable, optimal under a quality objective.",
+    "Parallel versions are produced in one solve and provably share no questions.",
+    "Every exam embeds the resolved blueprint → self-describing & reproducible.",
+    "No LLM, no PDF ingestion, no network — runs fully offline.",
 ], size=18, gap=10)
 
 # ══════════════════════════════════════════════════════════════════════
 # 3 — ARCHITECTURE / PIPELINE DIAGRAM
 # ══════════════════════════════════════════════════════════════════════
 s = slide()
-header(s, "Architecture: the pipeline at a glance", "FIVE STAGES, ONE FLOW")
+header(s, "Architecture: the pipeline at a glance", "POOL → SELECT → VERIFY")
 
-stages = [
-    ("1\nIngest", BLUEL, BLUE),
-    ("2\nIndex\n(RAG)", BLUEL, BLUE),
-    ("3\nGenerate\npool", BLUEL, BLUE),
-    ("4a\nDedup", BLUEL, BLUE),
-    ("4b\nAssemble\n(MIP)", BLUEL, BLUE),
-    ("5\nValidate", BLUEL, BLUE),
-    ("5\nJudge", BLUEL, BLUE),
-]
-n = len(stages)
-bw, bh = Inches(1.5), Inches(1.15)
-gap = Inches(0.22)
-total = bw * n + gap * (n - 1)
-x0 = (SW - total) // 2
-y0 = Inches(2.7)
-centers = []
-for i, (label, fill, line) in enumerate(stages):
-    x = x0 + i * (bw + gap)
-    box(s, x, y0, bw, bh, label, fill, line, DARK, size=13)
-    centers.append((x, x + bw))
-    if i < n - 1:
-        arrow(s, x + bw, y0 + bh // 2, x + bw + gap, y0 + bh // 2, GREY, 1.8)
-
-# data artifacts above
-box(s, centers[0][0], Inches(1.55), bw, Inches(0.6), "textbook.pdf",
-    GREENL, GREEN, DARK, size=11, shape=MSO_SHAPE.RECTANGLE)
-arrow(s, centers[0][0] + bw // 2, Inches(2.15), centers[0][0] + bw // 2, y0, GREEN, 1.6)
-box(s, centers[2][0], Inches(1.55), bw, Inches(0.6), "tagged pool",
-    GREENL, GREEN, DARK, size=11, shape=MSO_SHAPE.RECTANGLE)
-arrow(s, centers[2][0] + bw // 2, y0, centers[2][0] + bw // 2, Inches(2.15), GREEN, 1.6, dash=True)
-# blueprint feeds assemble (red)
-box(s, centers[4][0], Inches(1.55), bw, Inches(0.6), "blueprint.yaml",
-    REDL, RED, DARK, size=11, shape=MSO_SHAPE.RECTANGLE)
-arrow(s, centers[4][0] + bw // 2, Inches(2.15), centers[4][0] + bw // 2, y0, RED, 1.6)
-# exams out
-box(s, centers[5][0], Inches(4.2), bw, Inches(0.6), "exam versions\n+ reports",
-    GREENL, GREEN, DARK, size=10, shape=MSO_SHAPE.RECTANGLE)
-arrow(s, centers[5][0] + bw // 2, y0 + bh, centers[5][0] + bw // 2, Inches(4.2), GREEN, 1.6)
+bw, bh = Inches(2.2), Inches(1.2)
+y0 = Inches(2.9)
+xs = [Inches(0.7), Inches(3.5), Inches(6.5), Inches(9.5)]
+labels = [("question bank\n(JSON)", GREENL, GREEN),
+          ("Deduplicate\n(optional)", BLUEL, BLUE),
+          ("Assemble\n(greedy / MIP)", BLUEL, BLUE),
+          ("Validate\n(optional)", BLUEL, BLUE)]
+for i, (lab, f, l) in enumerate(labels):
+    shape = MSO_SHAPE.RECTANGLE if i == 0 else MSO_SHAPE.ROUNDED_RECTANGLE
+    box(s, xs[i], y0, bw, bh, lab, f, l, DARK, size=14, shape=shape)
+    if i < len(labels) - 1:
+        arrow(s, xs[i] + bw, y0 + bh // 2, xs[i + 1], y0 + bh // 2, GREY, 1.8)
+# output
+out_x = Inches(11.9)
+box(s, out_x, y0, Inches(1.2), bh, "exam\nversions", GREENL, GREEN, DARK, size=11,
+    shape=MSO_SHAPE.RECTANGLE)
+arrow(s, xs[3] + bw, y0 + bh // 2, out_x, y0 + bh // 2, GREEN, 1.6)
+# blueprint feeds assemble
+box(s, xs[2], Inches(1.5), bw, Inches(0.7), "blueprint\n(YAML + flags)",
+    REDL, RED, DARK, size=12, shape=MSO_SHAPE.RECTANGLE)
+arrow(s, xs[2] + bw // 2, Inches(2.2), xs[2] + bw // 2, y0, RED, 1.6)
 
 # legend
-chip(s, Inches(0.7), Inches(5.6), Inches(2.0), "processing stage", BLUEL, BLUE)
-chip(s, Inches(2.9), Inches(5.6), Inches(2.0), "data artifact", GREENL, GREEN)
-chip(s, Inches(5.1), Inches(5.6), Inches(2.4), "professor input", REDL, RED)
-textbox(s, Inches(0.7), Inches(6.2), Inches(12), Inches(1.0),
-        "Stages 1–3 PRODUCE candidate questions (grounded in retrieved text). "
-        "Stages 4–5 SELECT and VERIFY them. Each stage = one module in the "
-        "quizgen package.", size=15, color=GREY, italic=True)
+chip(s, Inches(0.7), Inches(5.0), Inches(2.0), "data", GREENL, GREEN)
+chip(s, Inches(2.9), Inches(5.0), Inches(2.2), "processing", BLUEL, BLUE)
+chip(s, Inches(5.3), Inches(5.0), Inches(2.6), "professor input", REDL, RED)
+textbox(s, Inches(0.7), Inches(5.7), Inches(12), Inches(1.2),
+        "Dedup and validation are opt-in (--dedup / --validate). The blueprint "
+        "drives assembly; each stage is one module in the quizgen package.",
+        size=15, color=GREY, italic=True)
 
 # ══════════════════════════════════════════════════════════════════════
-# 4 — DATA MODEL
+# 4 — DATA MODEL / INPUT
 # ══════════════════════════════════════════════════════════════════════
 s = slide()
-header(s, "The data contract: one schema, exported not written", "schema.py — Pydantic v2")
+header(s, "The input: a tagged question bank", "schema.py — Pydantic v2")
 bullets(s, Inches(0.7), Inches(1.45), Inches(5.7), Inches(5), [
-    "Every artifact is a Pydantic v2 model — the single source of truth.",
-    "JSON Schema is EXPORTED from the models, so they can never drift.",
-    "Three enums reused everywhere: a tag can't be a free-text typo.",
-    ("qtype: mcq | true_false | short_answer | cloze", 1),
-    ("bloom_level: remember … create (revised Bloom)", 1),
-    ("difficulty: easy | medium | hard", 1),
-    "source_ref links each question to the chunk(s) it was grounded in — the audit trail.",
-], size=17, gap=8)
+    "A JSON Quiz object (or a bare list) of Question items.",
+    "Pydantic v2 models are the single source of truth; JSON Schema is exported, not hand-written.",
+    "Metadata is exactly what selection reasons over:",
+    ("chapter → per-chapter quotas", 1),
+    ("difficulty → easy/medium/hard mix", 1),
+    ("qtype → allowed-type filter", 1),
+    ("bloom_level → quality objective", 1),
+    ("stem/answer/options → duplicate detection", 1),
+], size=17, gap=7)
 
 code = (
-    "class Question(BaseModel):\n"
-    "    id: str            # uuid4 hex[:12]\n"
-    "    chapter: int\n"
-    "    section: str | None\n"
-    "    qtype: QuestionType\n"
-    "    bloom_level: BloomLevel\n"
-    "    difficulty: Difficulty\n"
-    "    stem: str          # >= 10 chars\n"
-    "    options: list[str] | None\n"
-    "    answer: str\n"
-    "    explanation: str   # >= 10 chars\n"
-    "    source_ref: str    # grounding"
+    "{\n"
+    '  "chapter": 1,\n'
+    '  "section": "1.2",\n'
+    '  "qtype": "mcq",\n'
+    '  "bloom_level": "understand",\n'
+    '  "difficulty": "medium",\n'
+    '  "stem": "Explain how A* uses ...",\n'
+    '  "options": ["A) ...", "B) ...",\n'
+    '              "C) ...", "D) ..."],\n'
+    '  "answer": "A",\n'
+    '  "explanation": "A* is optimal ...",\n'
+    '  "source_ref": "ch1_sec2_q1"\n'
+    "}"
 )
-cb = box(s, Inches(6.7), Inches(1.45), Inches(6.0), Inches(4.0), code,
+cb = box(s, Inches(6.7), Inches(1.45), Inches(6.0), Inches(4.4), code,
          GREYL, GREY, DARK, size=14, bold=False, shape=MSO_SHAPE.RECTANGLE, font=MONO)
-cb.text_frame.paragraphs[0].alignment = PP_ALIGN.LEFT
 for p in cb.text_frame.paragraphs:
     p.alignment = PP_ALIGN.LEFT
 
 # ══════════════════════════════════════════════════════════════════════
-# 5 — STAGE 1 & 2
+# 5 — BLUEPRINT
 # ══════════════════════════════════════════════════════════════════════
 s = slide()
-header(s, "Stages 1–2: ingest & ground", "ingest.py  •  index.py")
-textbox(s, Inches(0.7), Inches(1.3), Inches(6), Inches(0.4),
-        "① INGEST", size=18, color=BLUE, bold=True)
-bullets(s, Inches(0.7), Inches(1.75), Inches(5.8), Inches(3), [
-    "PyMuPDF extracts text; the PDF table of contents gives chapter/section structure.",
-    "Sections split into overlapping ~500–800 token chunks with provenance metadata.",
-    "Offline fallback: a word-tokenizer shim replaces tiktoken when its vocab can't download.",
-], size=16, gap=8)
-textbox(s, Inches(7.0), Inches(1.3), Inches(6), Inches(0.4),
-        "② INDEX (RAG)", size=18, color=BLUE, bold=True)
-bullets(s, Inches(7.0), Inches(1.75), Inches(5.7), Inches(3.2), [
-    "Chunks embedded with sentence-transformers (all-MiniLM-L6-v2) into a local ChromaDB.",
-    "Top-k retrieval (filterable by chapter) supplies grounding CONTEXT to the generator.",
-    "= Retrieval-Augmented Generation: model writes only about retrieved text.",
-    "A word-overlap heuristic flags answers that don't match their context.",
-], size=16, gap=8)
-box(s, Inches(0.7), Inches(5.3), Inches(12), Inches(1.1),
-    "Why it matters:  grounding makes source_ref meaningful, keeps questions factual & "
-    "on-topic, and gives the whole pipeline a traceable audit trail.",
-    GREENL, GREEN, DARK, size=16, bold=False, shape=MSO_SHAPE.ROUNDED_RECTANGLE)
-
-# ══════════════════════════════════════════════════════════════════════
-# 6 — STAGE 3 CONTROLLED GENERATION
-# ══════════════════════════════════════════════════════════════════════
-s = slide()
-header(s, "Stage 3: controlled, grounded generation", "bloom.py • generate.py • llm_client.py")
-# three columns
-col_y = Inches(1.5)
-box(s, Inches(0.6), col_y, Inches(3.9), Inches(0.55), "WHAT to ask  (bloom.py)",
-    BLUE, BLUE, WHITE, size=14)
-bullets(s, Inches(0.65), Inches(2.15), Inches(3.9), Inches(3.4), [
-    "Single source of truth for prompt-craft.",
-    "Per-level Bloom + difficulty descriptions.",
-    "One few-shot example per Bloom level.",
-    "build_balanced_plan → ordered QuestionSpecs.",
-    "Largest-remainder makes counts EXACT.",
-], size=14, gap=6)
-
-box(s, Inches(4.7), col_y, Inches(3.9), Inches(0.55), "HOW to ask  (generate.py)",
-    BLUE, BLUE, WHITE, size=14)
-bullets(s, Inches(4.75), Inches(2.15), Inches(3.9), Inches(3.4), [
-    "Batched by Bloom level per LLM call.",
-    "Explicit numbered #SPEC directives.",
-    "Tag COERCION: returned questions are re-tagged to the requested level.",
-    "→ pool distribution matches the plan by construction.",
-], size=14, gap=6)
-
-box(s, Inches(8.8), col_y, Inches(3.9), Inches(0.55), "VALID JSON  (llm_client)",
-    BLUE, BLUE, WHITE, size=14)
-bullets(s, Inches(8.85), Inches(2.15), Inches(3.9), Inches(3.4), [
-    "Swappable OpenAI-compatible client (GLM / Ollama / vLLM / OpenAI).",
-    "chat_schema: strict json_schema → json_object → outlines.",
-    "Pydantic re-validates every item.",
-    "Shape guaranteed, never facts.",
-], size=14, gap=6)
-
-box(s, Inches(0.6), Inches(5.75), Inches(12.1), Inches(0.9),
-    "#SPEC 1 | bloom=apply | difficulty=medium | qtype=mcq        "
-    "#SPEC 2 | bloom=apply | difficulty=hard | qtype=short_answer",
-    GREYL, GREY, DARK, size=13, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
-
-# ══════════════════════════════════════════════════════════════════════
-# 7 — STAGE 4 BLUEPRINT + ATA + MIP
-# ══════════════════════════════════════════════════════════════════════
-s = slide()
-header(s, "Stage 4: blueprint → Automated Test Assembly", "blueprint.py • assemble.py")
+header(s, "The blueprint: a table of specifications", "blueprint.py")
 bp = (
     "total_questions: 20\n"
     "chapters: {1: 50%, 2: 30%, 3: 20%}\n"
     "difficulty_mix: {easy:.4, medium:.4, hard:.2}\n"
+    "allowed_qtypes: [mcq, short_answer, ...]\n"
     "versions: 2\n"
     "selector: mip\n"
     "dedup_similarity: 0.85"
 )
-box(s, Inches(0.6), Inches(1.45), Inches(4.6), Inches(2.5), bp,
+box(s, Inches(0.7), Inches(1.5), Inches(5.9), Inches(2.6), bp,
     REDL, RED, DARK, size=14, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
-textbox(s, Inches(0.6), Inches(4.05), Inches(4.7), Inches(2.6),
-        "The professor edits one small YAML.\nCounts may be ints, fractions or "
-        "\"NN%\"; resolve() turns them into exact integer counts (largest-remainder).",
-        size=14, color=GREY, italic=True)
+bullets(s, Inches(0.7), Inches(4.4), Inches(5.9), Inches(2.6), [
+    "Counts may be ints, fractions, or \"NN%\".",
+    "resolve() → exact integer counts that sum to the total (largest-remainder).",
+], size=15, gap=8)
 
-textbox(s, Inches(5.5), Inches(1.4), Inches(7.2), Inches(0.5),
-        "Selection = optimisation.  0–1 Mixed-Integer Program (PuLP/CBC):",
-        size=15, color=DARK, bold=True)
-mip = (
-    "maximise   Σ  q_i · x_iv            (total quality)\n"
-    "s.t.   Σ_{chap(i)=c}  x_iv  =  n_c    (exact per-chapter)\n"
-    "       Σ_{diff(i)=d}  x_iv  =  m_d    (exact difficulty)\n"
-    "       Σ_v  x_iv  ≤  1               (versions disjoint)\n"
-    "       Σ_v x_iv + Σ_v x_jv ≤ 1       (forbid dup pairs)\n"
-    "       x_iv ∈ {0, 1}"
-)
-box(s, Inches(5.5), Inches(2.0), Inches(7.2), Inches(2.5), mip,
-    GREYL, GREY, DARK, size=14, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
-bullets(s, Inches(5.5), Inches(4.7), Inches(7.3), Inches(2.4), [
-    "One solve produces all parallel versions, disjoint & individually compliant.",
-    "Infeasible? difficulty equalities relax (logged); per-chapter counts never violated.",
-    "GreedySelector = fast baseline behind the same interface (config switch).",
+textbox(s, Inches(7.0), Inches(1.45), Inches(5.7), Inches(0.5),
+        "YAML and/or CLI flags — flags win", size=17, bold=True, color=BLUE)
+bullets(s, Inches(7.0), Inches(2.0), Inches(5.7), Inches(2.0), [
+    "Keep a base blueprint.yaml, override per run.",
+    "build_blueprint loads YAML → overwrites field-by-field with provided flags → validates.",
+], size=15, gap=8)
+box(s, Inches(7.0), Inches(4.0), Inches(5.8), Inches(1.6),
+    "python -m quizgen --pool questions.json \\\n"
+    "  --blueprint blueprint.yaml \\\n"
+    "  --versions 3 --selector greedy",
+    NAVY, NAVY, WHITE, size=13, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
+
+# ══════════════════════════════════════════════════════════════════════
+# 6 — ATA: GREEDY vs MIP + FORMULATION
+# ══════════════════════════════════════════════════════════════════════
+s = slide()
+header(s, "Automated Test Assembly: greedy vs. MIP", "assemble.py")
+box(s, Inches(0.7), Inches(1.45), Inches(5.7), Inches(0.55),
+    "GreedySelector — fast baseline", BLUE, BLUE, WHITE, size=14)
+bullets(s, Inches(0.75), Inches(2.1), Inches(5.6), Inches(2.0), [
+    "Per-chapter fill, two passes (difficulty quota, then remainder).",
+    "Skips duplicates & already-used items.",
+    "Fast; no optimality guarantee.",
+], size=14, gap=6)
+box(s, Inches(0.7), Inches(4.1), Inches(5.7), Inches(0.55),
+    "MIPSelector — exact optimisation", BLUE, BLUE, WHITE, size=14)
+bullets(s, Inches(0.75), Inches(4.75), Inches(5.6), Inches(2.2), [
+    "0–1 program via PuLP / CBC.",
+    "Exact per-chapter AND difficulty counts.",
+    "Disjoint versions; forbids dup pairs.",
+    "Infeasible → relax difficulty (logged), never chapter counts.",
 ], size=14, gap=6)
 
-# ══════════════════════════════════════════════════════════════════════
-# 8 — DEDUP
-# ══════════════════════════════════════════════════════════════════════
-s = slide()
-header(s, "Deduplication: keep versions distinct", "similarity.py • dedup.py")
-bullets(s, Inches(0.7), Inches(1.5), Inches(6.0), Inches(4), [
-    "Near-duplicates waste blueprint slots and make versions predictable.",
-    "One API, two backends:",
-    ("Token-Jaccard over stem+answer(+options) — always available, offline.", 1),
-    ("Embedding cosine via the RAG encoder — catches paraphrases.", 1),
-    "Dedup drops the later of each pair BEFORE assembly…",
-    "…and the MIP additionally forbids any surviving dup pair across versions.",
-    "Degrades gracefully: no encoder ⇒ token backend automatically.",
-], size=16, gap=8)
-box(s, Inches(7.1), Inches(1.7), Inches(5.5), Inches(1.3),
-    "sim(q₁,q₂) = |T(q₁) ∩ T(q₂)|\n               ────────────────\n"
-    "               |T(q₁) ∪ T(q₂)|",
+mip = (
+    "max  Σ q_i · x_iv          (quality)\n"
+    "Σ_{chap(i)=c} x_iv = n_c    (per chapter)\n"
+    "Σ_{diff(i)=d} x_iv = m_d    (difficulty)\n"
+    "Σ_v  x_iv ≤ 1              (disjoint)\n"
+    "Σ_v x_iv + Σ_v x_jv ≤ 1    (no dup pair)\n"
+    "x_iv ∈ {0, 1}"
+)
+box(s, Inches(6.8), Inches(1.7), Inches(6.0), Inches(3.0), mip,
     GREYL, GREY, DARK, size=15, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
-box(s, Inches(7.1), Inches(3.3), Inches(5.5), Inches(2.4),
-    "Two layers of protection:\n\n1.  remove dups from the POOL (dedup.py)\n"
-    "2.  forbid dup PAIRS across versions (MIP constraint)",
-    GREENL, GREEN, DARK, size=15, bold=False, shape=MSO_SHAPE.ROUNDED_RECTANGLE)
+textbox(s, Inches(6.8), Inches(4.9), Inches(6.0), Inches(1.6),
+        "One solve produces all parallel versions at once — provably disjoint "
+        "and each individually blueprint-compliant.", size=15, color=GREY, italic=True)
 
 # ══════════════════════════════════════════════════════════════════════
-# 9 — STAGE 5 VALIDATION + JUDGE
+# 7 — DEDUP + VALIDATION
 # ══════════════════════════════════════════════════════════════════════
 s = slide()
-header(s, "Stage 5: validate & (optionally) judge", "validate.py • judge.py")
-textbox(s, Inches(0.7), Inches(1.3), Inches(12), Inches(0.4),
-        "Four-dimension validation report (the overall gate = PASS/FAIL):",
-        size=17, bold=True, color=DARK)
-quad = [
-    ("Schema validity", "every question round-trips through the Question model", BLUEL, BLUE),
-    ("Blueprint compliance", "per-chapter, difficulty, total & qtypes match EXACTLY", GREENL, GREEN),
-    ("Grounding coverage", "share traceable to source; answer words overlap passage", BLUEL, BLUE),
-    ("Duplicate rate", "share of questions involved in a near-duplicate pair", GREENL, GREEN),
-]
-for i, (t, d, f, l) in enumerate(quad):
-    x = Inches(0.7) + (i % 2) * Inches(6.2)
-    y = Inches(1.85) + (i // 2) * Inches(1.45)
-    sp = box(s, x, y, Inches(5.9), Inches(1.25), "", f, l, DARK,
-             shape=MSO_SHAPE.ROUNDED_RECTANGLE)
-    tf = sp.text_frame; tf.word_wrap = True
-    tf.paragraphs[0].text = t
-    _set(tf, 16, DARK, True, PP_ALIGN.CENTER)
-    p = tf.add_paragraph(); p.text = d; p.alignment = PP_ALIGN.CENTER
-    for r in p.runs:
-        r.font.size = Pt(12); r.font.name = FONT; r.font.color.rgb = GREY
-box(s, Inches(0.7), Inches(5.0), Inches(12.0), Inches(1.6),
-    "LLM-as-JUDGE (opt-in):  a SEPARATE model call rates each finished question 1–5 on "
-    "answerability, correctness, clarity & Bloom-match, and flags weak items for human "
-    "review. It only reads questions — never rewrites them — so generate & judge stay "
-    "cleanly separable.",
-    REDL, RED, DARK, size=15, bold=False, shape=MSO_SHAPE.ROUNDED_RECTANGLE)
+header(s, "Deduplication & validation", "similarity.py • dedup.py • validate.py")
+textbox(s, Inches(0.7), Inches(1.3), Inches(6), Inches(0.4),
+        "DEDUP (--dedup)", size=17, color=BLUE, bold=True)
+bullets(s, Inches(0.7), Inches(1.75), Inches(5.8), Inches(2.4), [
+    "Token-Jaccard over stem+answer(+options) — offline, always on.",
+    "Optional embedding cosine — catches paraphrases.",
+    "Drops dups from the pool; MIP also forbids dup pairs across versions.",
+], size=15, gap=7)
+box(s, Inches(0.7), Inches(4.4), Inches(5.7), Inches(1.1),
+    "sim(q₁,q₂) = |T(q₁) ∩ T(q₂)| / |T(q₁) ∪ T(q₂)|",
+    GREYL, GREY, DARK, size=14, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
+
+textbox(s, Inches(7.0), Inches(1.3), Inches(6), Inches(0.4),
+        "VALIDATE (--validate)", size=17, color=GREEN, bold=True)
+quad = [("Schema validity", GREENL, GREEN), ("Blueprint compliance", BLUEL, BLUE),
+        ("Grounding coverage", GREENL, GREEN), ("Duplicate rate", BLUEL, BLUE)]
+for i, (t, f, l) in enumerate(quad):
+    x = Inches(7.0) + (i % 2) * Inches(2.95)
+    y = Inches(1.85) + (i // 2) * Inches(1.0)
+    box(s, x, y, Inches(2.8), Inches(0.85), t, f, l, DARK, size=13)
+textbox(s, Inches(7.0), Inches(4.0), Inches(5.8), Inches(1.6),
+        "Overall PASS only if no schema-invalid items and (if checked) the "
+        "blueprint matches exactly. Exit code feeds CI.", size=14, color=GREY, italic=True)
 
 # ══════════════════════════════════════════════════════════════════════
-# 10 — OFFLINE / ORCHESTRATION
+# 8 — CLI / USAGE
 # ══════════════════════════════════════════════════════════════════════
 s = slide()
-header(s, "Orchestration & fully-offline operation", "pipeline.py • mock_client.py")
-bullets(s, Inches(0.7), Inches(1.5), Inches(12), Inches(2.6), [
-    "pipeline.py sequences every stage; each stage is imported from its own module.",
-    "MockLLMClient parses #SPEC/#JUDGE directives and synthesises deterministic, "
-    "schema-valid output — no network needed (--mock).",
-    "Index build is best-effort: no embeddings ⇒ generate without RAG, dedup/validate "
-    "fall back to token backend.",
-    "Swapping the real LLM provider is a one-line .env change.",
-], size=17, gap=10)
-box(s, Inches(0.7), Inches(4.7), Inches(12.0), Inches(1.0),
-    "python -m quizgen.pipeline --chapters 1-3 --blueprint blueprint.yaml --mock --judge",
-    NAVY, NAVY, WHITE, size=16, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
-textbox(s, Inches(0.7), Inches(5.9), Inches(12), Inches(0.8),
-        "ingest → index → generate → dedup → assemble → validate → judge", size=18,
-        color=BLUE, bold=True, align=PP_ALIGN.CENTER)
+header(s, "Using it", "python -m quizgen")
+textbox(s, Inches(0.7), Inches(1.35), Inches(12), Inches(0.4),
+        "Pure command line (no YAML):", size=16, bold=True, color=DARK)
+box(s, Inches(0.7), Inches(1.8), Inches(12.0), Inches(1.25),
+    "python -m quizgen --pool questions.json \\\n"
+    "    --total 20 --chapters 1:10,2:6,3:4 \\\n"
+    "    --difficulty 0.4,0.4,0.2 --versions 2 --selector mip",
+    NAVY, NAVY, WHITE, size=15, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
+textbox(s, Inches(0.7), Inches(3.3), Inches(12), Inches(0.4),
+        "Blueprint file + dedup + per-version validation report:", size=16, bold=True, color=DARK)
+box(s, Inches(0.7), Inches(3.75), Inches(12.0), Inches(1.0),
+    "python -m quizgen --pool questions.json --blueprint blueprint.yaml \\\n"
+    "    --dedup --validate --out-dir out",
+    NAVY, NAVY, WHITE, size=15, bold=False, font=MONO, shape=MSO_SHAPE.RECTANGLE)
+bullets(s, Inches(0.7), Inches(5.1), Inches(12), Inches(1.8), [
+    "Writes one Quiz JSON per version (each embeds the resolved blueprint).",
+    "Standalone entry points too: python -m quizgen.assemble, python -m quizgen.validate.",
+    "Exits non-zero on any non-compliant version → composes in scripts & CI.",
+], size=16, gap=8)
 
 # ══════════════════════════════════════════════════════════════════════
-# 11 — SOURCE ATTRIBUTION
+# 9 — SOURCE ATTRIBUTION
 # ══════════════════════════════════════════════════════════════════════
 s = slide()
 header(s, "Where each technique comes from", "TECHNIQUE → SOURCE LINEAGE")
 rows = [
-    ("Generate-then-select pipeline", "over-generate & select pattern (NLG / QG)"),
-    ("RAG grounding (index.py)", "Lewis et al. 2020 — retrieval-augmented generation"),
-    ("Bloom levels + aligned prompting", "Anderson & Krathwohl 2001 (revised Bloom)"),
-    ("Structured / constrained decoding", "JSON-Schema decoding; Outlines (Willard & Louf 2023)"),
     ("Test assembly as 0–1 MIP", "van der Linden 2005 — optimal test design"),
+    ("Quality-weighted selection", "van der Linden 2005 (objective in ATA)"),
+    ("Test blueprint", "classical table-of-specifications design"),
+    ("Bloom-level metadata", "Anderson & Krathwohl 2001 (revised Bloom)"),
     ("Semantic dedup (embeddings)", "Sentence-BERT (Reimers & Gurevych 2019)"),
-    ("LLM-as-judge (judge.py)", "Zheng et al. 2023 — judging LLM-as-a-judge"),
-    ("Test blueprint", "classical table-of-specifications assessment design"),
+    ("Largest-remainder counts", "Hamilton apportionment (engineering)"),
+    ("Greedy baseline, token Jaccard", "project-specific engineering"),
 ]
-ty = Inches(1.45)
-rh = Inches(0.52)
+ty = Inches(1.5)
+rh = Inches(0.58)
 box(s, Inches(0.7), ty, Inches(5.4), rh, "Implemented in code", BLUE, BLUE, WHITE, size=14)
 box(s, Inches(6.2), ty, Inches(6.5), rh, "Source lineage", BLUE, BLUE, WHITE, size=14)
 for i, (a, b) in enumerate(rows):
@@ -460,13 +389,12 @@ for i, (a, b) in enumerate(rows):
         shape=MSO_SHAPE.RECTANGLE)
     box(s, Inches(6.2), y, Inches(6.5), rh, b, f, GREY, DARK, size=12, bold=False,
         shape=MSO_SHAPE.RECTANGLE)
-textbox(s, Inches(0.7), Inches(6.95), Inches(12.4), Inches(0.5),
-        "Note: the cited papers are not in the repo — replace these keys with the "
-        "thesis's exact bibliography. Engineering (apportionment, greedy baseline, "
-        "mock client) is project-specific.", size=11, color=RED, italic=True)
+textbox(s, Inches(0.7), Inches(6.95), Inches(12.4), Inches(0.4),
+        "Note: replace these keys with the thesis's exact bibliography.",
+        size=11, color=RED, italic=True)
 
 # ══════════════════════════════════════════════════════════════════════
-# 12 — TAKEAWAYS
+# 10 — TAKEAWAYS
 # ══════════════════════════════════════════════════════════════════════
 s = slide()
 bg = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, SW, SH)
@@ -479,12 +407,12 @@ band = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.85), Inches(1.65),
 band.fill.solid(); band.fill.fore_color.rgb = BLUE; band.line.fill.background()
 band.shadow.inherit = False
 items = [
-    "Separate GENERATION from SELECTION — creativity vs. exact constraints.",
-    "RAG keeps questions grounded & traceable (source_ref).",
-    "Bloom-aligned prompting + tag coercion = exact pedagogical control.",
-    "A 0–1 MIP gives exact, auditable, multi-version assembly.",
-    "Layered checks: schema, blueprint, grounding, dedup, LLM-judge.",
-    "Runs fully offline; swap the LLM provider with one .env line.",
+    "Scope: SELECT an exam from a question bank — no generation, no LLM.",
+    "Blueprint = exact spec; counts resolve via largest-remainder.",
+    "Constraints from YAML and/or CLI flags (flags override).",
+    "A 0–1 MIP gives exact, optimal, disjoint multi-version assembly.",
+    "Optional dedup + layered validation (schema, blueprint, dups).",
+    "Runs fully offline; greedy baseline behind the same interface.",
 ]
 tb = s.shapes.add_textbox(Inches(0.9), Inches(2.1), Inches(11.6), Inches(4.8))
 tf = tb.text_frame; tf.word_wrap = True

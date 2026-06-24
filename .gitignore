@@ -3,24 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
 
-# Virtual Environment
+# Virtual environment
 .venv/
 venv/
 ENV/
@@ -29,42 +17,28 @@ env/
 # Environment variables
 .env
 
-# ChromaDB / Vector Database
-data/chroma_db/
-*.db
-*.sqlite
-*.sqlite3
-
-# Generated outputs
+# Generated exam outputs (the tool writes *.json + reports)
+out/
+exam*.json
 quizzes*.json
 *.json
 !schemas/*.json
-!package.json
+!questions.example.json
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Jupyter Notebooks
-.ipynb_checkpoints/
-*.ipynb
-
-# pytest
+# Caches / tooling
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
 
-# Logs
-*.log
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
 
-# Temporary files
+# Logs / temp
+*.log
 *.tmp
 *.bak
-*.backup
-
-# Keep the committed example question bank
-!questions.example.json

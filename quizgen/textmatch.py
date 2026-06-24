@@ -1,8 +1,8 @@
 """Lightweight lexical helpers shared across the pipeline.
 
 Kept dependency-free (stdlib only) so modules like :mod:`quizgen.validate` can
-use content-word overlap without importing the heavy vector-index stack
-(chromadb / sentence-transformers).
+use content-word overlap without pulling in the optional embeddings stack
+(sentence-transformers).
 """
 
 from __future__ import annotations
