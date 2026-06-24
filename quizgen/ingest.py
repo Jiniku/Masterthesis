@@ -26,6 +26,39 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
+# ── Tokenizer (with offline fallback) ───────────────────────────────
+
+
+class _WordTokenizer:
+    """Lightweight offline fallback for tiktoken.
+
+    ``tiktoken`` downloads its BPE vocabulary on first use; on an air-gapped
+    machine (or behind a restrictive proxy) that fails.  This shim approximates
+    token counts from whitespace words (~1.3 tokens/word for English prose),
+    which is accurate enough to drive chunk-size targets.  It exposes the only
+    method the chunker needs: :meth:`encode`.
+    """
+
+    _WORD = re.compile(r"\S+")
+
+    def encode(self, text: str) -> list[int]:
+        # ~1.3 subword tokens per whitespace word; return a list of that length.
+        n_words = len(self._WORD.findall(text))
+        return [0] * max(n_words, int(n_words * 1.3))
+
+
+def _get_encoder(name: str):
+    """Return a tiktoken encoding, falling back to :class:`_WordTokenizer`."""
+    try:
+        return tiktoken.get_encoding(name)
+    except Exception as exc:  # network unavailable, unknown encoding, etc.
+        logger.warning(
+            "tiktoken encoding '%s' unavailable (%s); using offline word "
+            "tokenizer for chunk sizing.", name, exc,
+        )
+        return _WordTokenizer()
+
+
 # ── Data structures ─────────────────────────────────────────────────
 
 
@@ -157,7 +190,7 @@ def _ingest_pdf(
         raise ValueError(f"No chapters found matching {chapter_nums}")
 
     # Extract text for each chapter/section
-    enc = tiktoken.get_encoding(chunk_cfg["tokenizer"])
+    enc = _get_encoder(chunk_cfg["tokenizer"])
 
     for chapter in chapters:
         _extract_chapter_text(doc, chapter)
@@ -441,7 +474,7 @@ def _ingest_text(
     chapter_re = re.compile(patterns.get("chapter", r"^#+\s+Chapter\s+(\d+)[:\s]+(.+)"), re.M)
     section_re = re.compile(patterns.get("section", r"^##+\s+(\d+\.\d+)\s+(.+)"), re.M)
 
-    enc = tiktoken.get_encoding(chunk_cfg["tokenizer"])
+    enc = _get_encoder(chunk_cfg["tokenizer"])
 
     # Find chapter boundaries
     chapter_matches = list(chapter_re.finditer(text))

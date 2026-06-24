@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     default_per_chunk: int = 2
     default_temperature: float = 0.7
 
+    # ── Structured output (Phase 3) ─────────────────────────────────
+    # How the LLMClient forces schema-valid JSON. One of:
+    #   "auto"        – try strict json_schema, fall back to json_object, then text
+    #   "json_schema" – OpenAI/GLM strict structured-output mode (response_format)
+    #   "json_object" – loose JSON mode (provider validates only that it is JSON)
+    #   "outlines"    – local constrained decoding via the Outlines library
+    structured_output_mode: str = "auto"
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

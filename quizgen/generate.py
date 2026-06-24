@@ -518,7 +518,261 @@ def _generate_from_retrieved_chunks(
     return []
 
 
+# ── Phase 3: controlled (Bloom + difficulty) generation ─────────────
+
+SYSTEM_PROMPT_CONTROLLED = """\
+You are an expert exam question writer for a university-level Artificial Intelligence course.
+You create high-quality, schema-valid questions grounded ONLY in the provided source text,
+and you precisely honour the requested cognitive level (Bloom's taxonomy) and difficulty for
+each question.
+
+Rules:
+1. Every question MUST be answerable using ONLY the provided text passage(s).
+2. Do NOT use any knowledge beyond the passages.
+3. Produce EXACTLY one question per numbered specification, in order.
+4. Each question MUST match the bloom_level, difficulty, and qtype given in its specification.
+5. For MCQ, provide exactly 4 options (prefixed "A) ".."D) ") and set answer to the correct letter.
+6. For true_false, set answer to "True" or "False"; for short_answer/cloze set options to null.
+7. Set source_ref to the chunk id(s) you used.
+8. Respond with valid JSON only — an object with a "questions" key containing the array.
+"""
+
+CONTROLLED_USER_TEMPLATE = """\
+Generate exam questions for Chapter {chapter_num}{section_str}, grounded ONLY in the passages below.
+
+COGNITIVE LEVEL GUIDANCE (Bloom's taxonomy):
+{bloom_guidance}
+
+DIFFICULTY GUIDANCE:
+{difficulty_guidance}
+
+{fewshot}
+
+SOURCE PASSAGES:
+{context}
+
+---
+SPECIFICATIONS — produce exactly {n} question(s), one per line below, in this exact order.
+Each question must match its bloom_level / difficulty / qtype:
+{spec_block}
+
+Respond with a JSON object: {{"questions": [ {{Question}}, ... ]}} where each Question has keys:
+chapter, section, qtype, bloom_level, difficulty, stem, options, answer, explanation, source_ref.
+For non-MCQ questions set "options" to null.
+"""
+
+
+def _build_spec_block(specs: list["QuestionSpec"]) -> str:
+    """Render specs as machine- and human-readable per-question directives."""
+    lines = []
+    for i, spec in enumerate(specs, 1):
+        qtype = spec.qtype.value if spec.qtype else "any"
+        lines.append(
+            f"#SPEC {i} | bloom={spec.bloom_level.value} | "
+            f"difficulty={spec.difficulty.value} | qtype={qtype}"
+        )
+    return "\n".join(lines)
+
+
+def _build_context_from_chunks(chunks: list[Chunk], max_chars: int = 6000) -> str:
+    """Concatenate chunk texts (with ids) up to a character budget."""
+    parts: list[str] = []
+    used = 0
+    for c in chunks:
+        snippet = f"[{c.chunk_id}]\n{c.text}"
+        if used + len(snippet) > max_chars and parts:
+            break
+        parts.append(snippet)
+        used += len(snippet)
+    return "\n\n".join(parts)
+
+
+def generate_controlled_for_chapter(
+    chapter: Chapter,
+    specs: list["QuestionSpec"],
+    client: LLMClient | None = None,
+    *,
+    index: "ChunkIndex | None" = None,
+    rag_top_k: int = 5,
+    max_retries: int = 2,
+    coerce_tags: bool = True,
+) -> list[Question]:
+    """Generate questions for *chapter* fulfilling an explicit list of *specs*.
+
+    Specs are batched by Bloom level so each LLM call carries that level's
+    description and few-shot example(s) (Bloom-aligned prompting). Difficulty
+    is requested per question. When *coerce_tags* is True the returned
+    questions are authoritatively tagged with the requested bloom_level and
+    difficulty (logging any model deviation), guaranteeing the output
+    distribution matches the request.
+
+    If *index* is provided, grounding context is retrieved via RAG; otherwise
+    the chapter's own chunks are used as context.
+    """
+    from quizgen.bloom import (
+        BLOOM_DESCRIPTIONS,
+        DIFFICULTY_DESCRIPTIONS,
+        QuestionSpec,  # noqa: F401  (typing import made concrete)
+        render_fewshot,
+    )
+
+    if client is None:
+        client = LLMClient()
+
+    # Group specs by Bloom level, preserving order.
+    by_bloom: dict = {}
+    for spec in specs:
+        by_bloom.setdefault(spec.bloom_level, []).append(spec)
+
+    section_label = chapter.sections[0].label if chapter.sections else None
+    results: list[Question] = []
+
+    for bloom_level, bloom_specs in by_bloom.items():
+        # Build grounding context for this batch.
+        if index is not None:
+            query = f"Chapter {chapter.number}: {chapter.title} — {bloom_level.value} concepts"
+            retrieved = index.query(query, chapter=chapter.number, top_k=rag_top_k)
+            context = "\n\n".join(f"[{r.chunk_id}]\n{r.text}" for r in retrieved)
+            ground_ref = retrieved[0].chunk_id if retrieved else f"ch{chapter.number}"
+        else:
+            context = _build_context_from_chunks(chapter.chunks)
+            ground_ref = chapter.chunks[0].chunk_id if chapter.chunks else f"ch{chapter.number}"
+
+        difficulty_guidance = "\n".join(
+            f"- {d.value}: {DIFFICULTY_DESCRIPTIONS[d]}"
+            for d in {s.difficulty for s in bloom_specs}
+        )
+        user_msg = CONTROLLED_USER_TEMPLATE.format(
+            chapter_num=chapter.number,
+            section_str=f" §{section_label}" if section_label else "",
+            bloom_guidance=f"- {bloom_level.value}: {BLOOM_DESCRIPTIONS[bloom_level]}",
+            difficulty_guidance=difficulty_guidance,
+            fewshot=render_fewshot(bloom_level),
+            context=context[:8000],
+            n=len(bloom_specs),
+            spec_block=_build_spec_block(bloom_specs),
+        )
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT_CONTROLLED},
+            {"role": "user", "content": user_msg},
+        ]
+
+        batch = _generate_controlled_batch(
+            messages, bloom_specs, chapter.number, section_label,
+            ground_ref, client, max_retries, coerce_tags,
+        )
+        results.extend(batch)
+        logger.info(
+            "  ✓ %d/%d %s question(s) for Ch.%d",
+            len(batch), len(bloom_specs), bloom_level.value, chapter.number,
+        )
+
+    return results
+
+
+def _generate_controlled_batch(
+    messages: list[dict[str, str]],
+    specs: list["QuestionSpec"],
+    chapter_num: int,
+    section_label: str | None,
+    ground_ref: str,
+    client: LLMClient,
+    max_retries: int,
+    coerce_tags: bool,
+) -> list[Question]:
+    """Run one controlled LLM call and align results to *specs* in order."""
+    from quizgen.schema import question_batch_schema
+
+    schema = question_batch_schema()
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            data = client.chat_schema(
+                messages, schema, schema_name="question_batch",
+                temperature=0.6, max_tokens=4096,
+            )
+            raw = data.get("questions", []) if isinstance(data, dict) else data
+
+            valid: list[Question] = []
+            for i, raw_q in enumerate(raw):
+                if not isinstance(raw_q, dict):
+                    continue
+                raw_q.setdefault("chapter", chapter_num)
+                if section_label:
+                    raw_q.setdefault("section", section_label)
+                raw_q.setdefault("source_ref", ground_ref)
+                # Authoritatively tag with the requested spec (Phase 3 control).
+                if coerce_tags and i < len(specs):
+                    spec = specs[i]
+                    if raw_q.get("bloom_level") not in (None, spec.bloom_level.value):
+                        logger.debug(
+                            "  model returned bloom=%s, coercing to requested %s",
+                            raw_q.get("bloom_level"), spec.bloom_level.value,
+                        )
+                    raw_q["bloom_level"] = spec.bloom_level.value
+                    raw_q["difficulty"] = spec.difficulty.value
+                    if spec.qtype is not None:
+                        raw_q.setdefault("qtype", spec.qtype.value)
+                try:
+                    valid.append(Question.model_validate(raw_q))
+                except ValidationError as e:
+                    logger.debug("  controlled question %d invalid: %s", i + 1, e.error_count())
+
+            if valid:
+                return valid
+            logger.warning("  Attempt %d: no valid controlled questions, retrying...", attempt)
+        except Exception as e:
+            logger.warning("  Controlled attempt %d failed: %s", attempt, e)
+            if attempt < max_retries:
+                time.sleep(1)
+
+    return []
+
+
 # ── Quiz assembly helper ────────────────────────────────────────────
+
+
+def generate_controlled(
+    chapters: list[Chapter],
+    total_per_chapter: int = 12,
+    client: LLMClient | None = None,
+    *,
+    bloom_levels: list | None = None,
+    difficulty_mix: dict[str, float] | None = None,
+    qtypes: list | None = None,
+    index: "ChunkIndex | None" = None,
+    rag_top_k: int = 5,
+) -> list[Question]:
+    """Controlled generation across chapters (Phase 3 convenience wrapper).
+
+    For each chapter, builds a balanced :class:`~quizgen.bloom.QuestionSpec`
+    plan (``total_per_chapter`` questions spread across *bloom_levels* with the
+    requested *difficulty_mix*) and fulfils it via
+    :func:`generate_controlled_for_chapter`.
+    """
+    from quizgen.bloom import build_balanced_plan
+
+    if client is None:
+        client = LLMClient()
+
+    all_questions: list[Question] = []
+    for chapter in chapters:
+        specs = build_balanced_plan(
+            total_per_chapter,
+            bloom_levels=bloom_levels,
+            difficulty_mix=difficulty_mix,
+            qtypes=qtypes,
+        )
+        logger.info(
+            "Controlled generation: Ch.%d — %d questions across %d Bloom level(s)",
+            chapter.number, len(specs), len({s.bloom_level for s in specs}),
+        )
+        all_questions.extend(
+            generate_controlled_for_chapter(
+                chapter, specs, client, index=index, rag_top_k=rag_top_k,
+            )
+        )
+    return all_questions
 
 
 def questions_to_quiz(
@@ -572,6 +826,31 @@ def print_summary(questions: list[Question]) -> None:
     print(f"\n{'='*60}\n")
 
 
+def print_distribution_table(questions: list[Question]) -> None:
+    """Print a Bloom-level × difficulty cross-tabulation (Phase 3)."""
+    from collections import Counter
+
+    blooms = ["remember", "understand", "apply", "analyze", "evaluate", "create"]
+    diffs = ["easy", "medium", "hard"]
+
+    cell = Counter((q.bloom_level.value, q.difficulty.value) for q in questions)
+
+    print(f"\n{'='*64}")
+    print(f"  BLOOM × DIFFICULTY DISTRIBUTION — {len(questions)} questions")
+    print(f"{'='*64}")
+    header = f"  {'Bloom level':<13}" + "".join(f"{d:>9}" for d in diffs) + f"{'total':>9}"
+    print(header)
+    print(f"  {'-'*(13 + 9*4)}")
+    for b in blooms:
+        row = sum(cell[(b, d)] for d in diffs)
+        line = f"  {b:<13}" + "".join(f"{cell[(b, d)]:>9}" for d in diffs) + f"{row:>9}"
+        print(line)
+    print(f"  {'-'*(13 + 9*4)}")
+    totals = [sum(cell[(b, d)] for b in blooms) for d in diffs]
+    print(f"  {'TOTAL':<13}" + "".join(f"{t:>9}" for t in totals) + f"{len(questions):>9}")
+    print(f"{'='*64}\n")
+
+
 def print_questions(questions: list[Question], n: int = 5) -> None:
     """Pretty-print the first *n* questions."""
     print(f"\n{'─'*60}")
@@ -590,3 +869,12 @@ def print_questions(questions: list[Question], n: int = 5) -> None:
         print(f"      Source: {q.source_ref}")
 
     print(f"\n{'─'*60}\n")
+
+
+# ── Module CLI entry point ──────────────────────────────────────────
+# Enables the documented invocation `python -m quizgen.generate ...`,
+# delegating to the shared CLI in quizgen/__main__.py.
+if __name__ == "__main__":
+    from quizgen.__main__ import main
+
+    main()

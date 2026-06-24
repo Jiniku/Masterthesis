@@ -21,12 +21,25 @@ import sys
 from pathlib import Path
 
 from quizgen.generate import (
+    generate_controlled,
     generate_questions,
+    print_distribution_table,
     print_questions,
     print_summary,
     questions_to_quiz,
 )
 from quizgen.ingest import ingest_textbook
+
+
+def parse_difficulty_mix(spec: str | None) -> dict[str, float] | None:
+    """Parse 'easy:0.4,medium:0.4,hard:0.2' into a fraction mapping."""
+    if not spec:
+        return None
+    mix: dict[str, float] = {}
+    for part in spec.split(","):
+        key, _, val = part.partition(":")
+        mix[key.strip()] = float(val)
+    return mix
 
 
 def parse_chapters(spec: str) -> list[int]:
@@ -116,6 +129,27 @@ def main() -> None:
         help="Directory for ChromaDB vector index (default: data/chroma_db)",
     )
     parser.add_argument(
+        "--controlled",
+        action="store_true",
+        help="Phase 3: controlled generation with explicit Bloom + difficulty spread",
+    )
+    parser.add_argument(
+        "--total",
+        type=int,
+        default=12,
+        help="Controlled mode: questions per chapter (default: 12)",
+    )
+    parser.add_argument(
+        "--difficulty-mix",
+        default=None,
+        help="Controlled mode difficulty spread, e.g. 'easy:0.4,medium:0.4,hard:0.2'",
+    )
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Use the offline MockLLMClient (no API/Ollama needed) — for demos/tests",
+    )
+    parser.add_argument(
         "-v", "--verbose",
         action="store_true",
         help="Enable verbose logging",
@@ -162,6 +196,57 @@ def main() -> None:
     # ── Step 2: Determine generation mode ──────────────────────────
     use_rag = args.rag and not args.no_rag  # --rag overrides, --no-rag disables
 
+    # Optional offline client for demos / CI.
+    client = None
+    if args.mock:
+        from quizgen.mock_client import MockLLMClient
+
+        client = MockLLMClient()
+        print("   Using offline MockLLMClient (no network calls)")
+
+    # ── Controlled mode (Phase 3) ──────────────────────────────────
+    if args.controlled:
+        difficulty_mix = parse_difficulty_mix(args.difficulty_mix)
+        index = None
+        if use_rag:
+            from quizgen.index import ChunkIndex
+
+            print(f"\n🔍 RAG MODE — Building vector index from {total_chunks} chunks...")
+            index = ChunkIndex(persist_dir=args.index_dir)
+            index.build(chapters, force_rebuild=False)
+
+        print(
+            f"\n⏳ Controlled generation — {args.total} questions/chapter "
+            f"across all Bloom levels (difficulty mix: {args.difficulty_mix or '40/40/20'})..."
+        )
+        questions = generate_controlled(
+            chapters,
+            total_per_chapter=args.total,
+            client=client,
+            difficulty_mix=difficulty_mix,
+            index=index,
+        )
+        if not questions:
+            print("\n❌ No valid questions generated. Check your LLM endpoint in .env")
+            sys.exit(1)
+
+        title = args.title or f"Controlled Quiz — Chapters {args.chapters}"
+        blueprint = {
+            "chapters": chapter_nums,
+            "total_per_chapter": args.total,
+            "difficulty_mix": difficulty_mix or {"easy": 0.4, "medium": 0.4, "hard": 0.2},
+            "generation_mode": "controlled+RAG" if use_rag else "controlled",
+        }
+        quiz = questions_to_quiz(questions, title=title, blueprint=blueprint)
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(quiz.model_dump_json(indent=2))
+        print(f"\n💾 Saved {len(questions)} questions to {out_path}")
+
+        print_questions(questions, n=args.show)
+        print_distribution_table(questions)
+        return
+
     if use_rag:
         print(f"\n🔍 RAG MODE — Building vector index from {total_chunks} chunks...")
         from quizgen.index import ChunkIndex
@@ -174,6 +259,7 @@ def main() -> None:
         questions = generate_questions(
             chapters,
             per_chunk=args.per_chunk,
+            client=client,
             use_rag=True,
             index=index,
             rag_top_k=args.rag_top_k,
@@ -184,7 +270,9 @@ def main() -> None:
         print(f"   Expected: ~{total_chunks * args.per_chunk} questions")
         print("   Mode: Phase 1 (single-chunk generation)")
 
-        questions = generate_questions(chapters, per_chunk=args.per_chunk, use_rag=False)
+        questions = generate_questions(
+            chapters, per_chunk=args.per_chunk, client=client, use_rag=False
+        )
 
     if not questions:
         print("\n❌ No valid questions generated. Check your LLM endpoint in .env")
