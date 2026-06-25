@@ -359,6 +359,46 @@ textbox(s, Inches(6.8), Inches(4.85), Inches(6.0), Inches(1.6),
         "and each individually blueprint-compliant.", size=15, color=GREY, italic=True)
 
 # ══════════════════════════════════════════════════════════════════════
+# 6b — THE MIP IN PLAIN WORDS
+# ══════════════════════════════════════════════════════════════════════
+s = slide()
+header(s, "What the equations actually say", "THE MIP IN PLAIN WORDS")
+textbox(s, Inches(0.7), Inches(1.2), Inches(12.2), Inches(0.6),
+        "A MIP is just: lots of yes/no choices  +  one goal  +  rules to obey. "
+        "The solver flips the switches to score as high as it can while breaking "
+        "no rule.", size=15, color=GREY, italic=True)
+mip_rows = [
+    ("x(i,v) = 1 or 0",
+     "An on/off switch for each question on each paper.  ON = use it here;  OFF = leave it out."),
+    ("maximise  Σ q(i)·x(i,v)",
+     "Every question has a quality score. Turn ON the switches that add up to the best total."),
+    ("Σ x(i,v) = n_c    (chapter)",
+     "Use EXACTLY the wanted number of questions from each chapter — no more, no less."),
+    ("Σ x(i,v) = m_d    (difficulty)",
+     "Use EXACTLY the wanted number of easy / medium / hard questions."),
+    ("Σ x(i,v) = k_p    (type)",
+     "Use EXACTLY the wanted number of each kind (MCQ, true/false, short, cloze)."),
+    ("Σ_v x(i,v) ≤ 1    (no overlap)",
+     "A question may go on at most ONE paper, so two papers never share a question."),
+    ("x(i,·) + x(j,·) ≤ 1  (near-twins)",
+     "If two questions are almost the same, use at most ONE of them anywhere."),
+]
+ty = Inches(1.9); rh = Inches(0.58)
+box(s, Inches(0.7), ty, Inches(4.5), rh, "The maths", FAUBLUE, FAUBLUE, WHITE, size=13)
+box(s, Inches(5.3), ty, Inches(7.4), rh, "What it says, in everyday words",
+    FAUBLUE, FAUBLUE, WHITE, size=13)
+for i, (m, plain) in enumerate(mip_rows):
+    y = ty + rh * (i + 1)
+    f = WHITE if i % 2 else GREYL
+    box(s, Inches(0.7), y, Inches(4.5), rh, m, f, GREY, DARK, size=12, bold=False,
+        font=MONO, shape=MSO_SHAPE.RECTANGLE)
+    box(s, Inches(5.3), y, Inches(7.4), rh, plain, f, GREY, DARK, size=12, bold=False,
+        shape=MSO_SHAPE.RECTANGLE)
+textbox(s, Inches(0.7), ty + rh * 8 + Inches(0.04), Inches(12.2), Inches(0.4),
+        "The “=” lines are promises kept exactly; the “≤ 1” "
+        "lines are limits that stop overlap.", size=12, color=FAUBLUE, bold=True)
+
+# ══════════════════════════════════════════════════════════════════════
 # 7 — WHY NOT ALL-MCQ?  (the qtype_mix story)
 # ══════════════════════════════════════════════════════════════════════
 s = slide()

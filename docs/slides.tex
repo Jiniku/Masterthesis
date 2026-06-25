@@ -556,6 +556,45 @@ For each version:
 \end{frame}
 
 % =====================================================================
+\begin{frame}{The MIP in plain words}
+  A MIP is just three things: lots of \textbf{yes/no choices}, one \textbf{goal},
+  and \textbf{rules} the choices must obey. The solver flips the yes/no switches
+  to score as high as it can while breaking no rule.
+
+  \vspace{1mm}
+  \begin{center}\scriptsize
+  \begin{tabular}{@{}p{4.2cm}p{8.3cm}@{}}
+  \toprule
+  \textbf{The maths} & \textbf{What it says, in everyday words} \\
+  \midrule
+  $x_{iv}\in\{0,1\}$ &
+    One on/off switch per question, per exam paper. ON $=$ ``put this question on
+    this paper''; OFF $=$ ``leave it out''. \\[1mm]
+  $\max \sum_{i,v} w_i\,x_{iv}$ &
+    Every question has a quality score $w_i$; turning its switch ON adds that
+    score. Pick the switches that make the total as high as possible. \\[1mm]
+  $\sum_{i\in Q_c} x_{iv}=n_c$ &
+    Take \emph{exactly} the wanted number of questions from each chapter --- not
+    one more, not one fewer. \\[1mm]
+  $\sum_{i\in Q_l} x_{iv}=m_l$ &
+    Take \emph{exactly} the wanted number of easy, medium and hard questions. \\[1mm]
+  $\sum_{i\in Q_p} x_{iv}=k_p$ &
+    Take \emph{exactly} the wanted number of each kind (MCQ, true/false, \ldots). \\[1mm]
+  $\sum_{v} x_{iv}\le 1$ &
+    Each question may go on \emph{at most one} paper, so two papers never share a
+    question. \\[1mm]
+  $\sum_{v}x_{iv}+\sum_{v}x_{jv}\le 1$ &
+    If two questions are near-twins, use \emph{at most one} of them anywhere. \\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.5mm}
+  {\footnotesize The ``$=$'' lines are promises kept \textbf{exactly}; the
+  ``$\le 1$'' lines are \textbf{limits} that stop overlap.}
+\end{frame}
+
+% =====================================================================
 \begin{frame}{When the exact model is infeasible}
   Sometimes the pool cannot satisfy every constraint at once (e.g. too few hard
   questions remain). A \textbf{two-phase solve} handles it:
