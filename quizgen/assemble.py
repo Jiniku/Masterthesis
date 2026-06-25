@@ -253,19 +253,34 @@ class MIPSelector(Selector):
 
         def build_and_solve(enforce_difficulty: bool, enforce_qtype: bool):
             prob = pulp.LpProblem("exam_assembly", pulp.LpMaximize)
+
+            # Decision variables:  x_iv in {0, 1}   for all questions i, versions v
+            #   One on/off switch per question, per exam paper.
+            #   x_iv = 1  ->  put question i on version v;
+            #   x_iv = 0  ->  leave it out.
             x = {
                 (i, v): pulp.LpVariable(f"x_{i}_{v}", cat="Binary")
                 for i in range(n) for v in V
             }
-            # Objective: maximise total quality across all selected items.
+
+            # Objective:  max  sum_{i,v} w_i * x_iv
+            #   Every question has a quality score w_i (quality[i]); turning its
+            #   switch ON adds that score. Pick the switches that make the total
+            #   as high as possible.
             prob += pulp.lpSum(quality[i] * x[(i, v)] for i in range(n) for v in V)
 
             for v in V:
-                # Exact per-chapter counts.
+                # Constraint 1 — exact per-chapter counts:
+                #   sum_{i in chapter c} x_iv = n_c     for every chapter c
+                #   Take exactly the wanted number of questions from each chapter
+                #   (n_c) — not one more, not one fewer. Never relaxed.
                 for ch, need in chapter_counts.items():
                     members = [i for i in range(n) if candidates[i].chapter == ch]
                     prob += pulp.lpSum(x[(i, v)] for i in members) == need
-                # Exact difficulty counts (optionally relaxed).
+                # Constraint 2 — exact difficulty counts (optionally relaxed):
+                #   sum_{i with difficulty d} x_iv = m_d   for every level d
+                #   Take exactly the wanted number of easy / medium / hard
+                #   questions (m_d).
                 if enforce_difficulty and difficulty_counts:
                     for d, need in difficulty_counts.items():
                         members = [
@@ -273,7 +288,11 @@ class MIPSelector(Selector):
                             if candidates[i].difficulty.value == d.value
                         ]
                         prob += pulp.lpSum(x[(i, v)] for i in members) == need
-                # Exact question-type counts (optionally relaxed).
+                # Constraint 2b — exact question-type counts (optionally relaxed):
+                #   sum_{i of type p} x_iv = k_p           for every type p
+                #   Take exactly the wanted number of each kind (MCQ,
+                #   true/false, ...) (k_p). This is what stops the optimiser
+                #   filling every slot with the highest-scoring format (MCQ).
                 if enforce_qtype and qtype_counts:
                     for qt, need in qtype_counts.items():
                         members = [
@@ -282,11 +301,17 @@ class MIPSelector(Selector):
                         ]
                         prob += pulp.lpSum(x[(i, v)] for i in members) == need
 
-            # Each question used in at most one version (disjoint versions).
+            # Constraint 3 — disjoint versions:
+            #   sum_v x_iv <= 1     for every question i
+            #   Each question may go on AT MOST ONE paper, so two versions never
+            #   share a question.
             for i in range(n):
                 prob += pulp.lpSum(x[(i, v)] for v in V) <= 1
 
-            # Forbid near-duplicate pairs anywhere across versions.
+            # Constraint 4 — no near-duplicate pairs:
+            #   sum_v x_iv + sum_v x_jv <= 1    for every near-twin pair (i, j)
+            #   If two questions are near-twins, use AT MOST ONE of them anywhere
+            #   across all versions.
             for i, j in dup_pairs:
                 prob += (
                     pulp.lpSum(x[(i, v)] for v in V)
